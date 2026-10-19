@@ -140,7 +140,10 @@ function errorText(error: unknown): string {
   return parts.join(' | ');
 }
 
-const RATE_LIMIT = /429|rate limit|too many/i;
+// Numeric statuses must be word-bounded: a block number like 48314429 or
+// 48310502 contains "429"/"502" as a substring, and classifying a range-cap
+// error as transient would retry the same oversized window until it fails.
+const RATE_LIMIT = /\b429\b|rate.?limit|too many requests/i;
 /**
  * A provider-imposed range cap. The wording varies by provider — Base's public
  * RPC says "eth_getLogs is limited to a 200 range", others say "block range is
@@ -159,6 +162,30 @@ function statedRangeLimit(message: string): number | null {
   if (match?.[1] === undefined) return null;
   const value = Number(match[1]);
   return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** HTTP status carried by a transport-level error, if any. */
+function httpStatus(error: unknown, depth = 0): number | null {
+  if (depth > 4 || error === null || typeof error !== 'object') return null;
+  const candidate = error as { status?: unknown; cause?: unknown };
+  if (typeof candidate.status === 'number') return candidate.status;
+  return httpStatus(candidate.cause, depth + 1);
+}
+
+/**
+ * Some providers reject an oversized getLogs at the HTTP layer with no range
+ * wording at all — Base Sepolia answers "Received an unexpected status code
+ * from https://sepolia.base.org". That is a range rejection in disguise, not a
+ * reason to give up, but only when the status is a payload/parameter rejection;
+ * auth and routing failures (401/403/404) can never be fixed by shrinking.
+ */
+const HTTP_REJECTION = /unexpected status code|http (?:status|error)/i;
+
+function isRangeShapedHttpRejection(error: unknown, message: string): boolean {
+  const status = httpStatus(error);
+  if (status === 400 || status === 413 || status === 414 || status === 422) return true;
+  if (status !== null) return false;
+  return HTTP_REJECTION.test(message);
 }
 
 /**
@@ -213,7 +240,12 @@ export async function scanRange(args: ScanArgs): Promise<ScanResult> {
           const next =
             stated !== null ? stated : Math.floor(chunkSize / 2);
           chunkSize = Math.max(1, Math.min(requested - 1, next));
-        } else if (!/timeout|network|fetch failed|ECONNRESET|503|502|504/i.test(message)) {
+        } else if (isRangeShapedHttpRejection(error, message)) {
+          // No numeric cap to adopt, but the transport rejected the request:
+          // halve and try again rather than failing a first load that would
+          // succeed with a smaller window.
+          chunkSize = Math.max(1, Math.floor(chunkSize / 2));
+        } else if (!/timeout|timed out|network|fetch failed|ECONNRESET|\b(?:502|503|504)\b/i.test(message)) {
           // Unknown and non-transient: fail fast rather than burn retries.
           throw error;
         }

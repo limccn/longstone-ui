@@ -263,6 +263,80 @@ describe('scanRange — chunked scan with retry/halving', () => {
     }
   });
 
+  it('does not read status digits inside a block number as a 429', async () => {
+    // Range-cap errors can quote the failing window. Block 48314429 contains
+    // "429"; matching that would take the rate-limit branch, halve instead of
+    // adopting the provider's stated 200-block cap, and mask the real cause.
+    const calls: Array<{ fromBlock: bigint; toBlock: bigint }> = [];
+    const client = clientWith(async (args) => {
+      calls.push({ fromBlock: args.fromBlock, toBlock: args.toBlock });
+      if (args.toBlock - args.fromBlock + 1n > 200n) {
+        throw new Error('eth_getLogs is limited to a 200 range (48314429..48315428)');
+      }
+      return [];
+    });
+
+    vi.useFakeTimers();
+    try {
+      const run = scanRange({
+        client,
+        registryAddress: REGISTRY,
+        fromBlock: 0n,
+        toBlock: 1_000n,
+        chunkSize: 10_000,
+      });
+      await vi.runAllTimersAsync();
+      await run;
+
+      // The stated cap is adopted on the first retry, not halved repeatedly.
+      expect(calls[1]!.toBlock - calls[1]!.fromBlock + 1n).toBe(200n);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shrinks on an opaque HTTP rejection that names no range', async () => {
+    // Base Sepolia can reject an oversized eth_getLogs at the HTTP layer with
+    // "Received an unexpected status code". The text states neither a cap nor
+    // a range; treating it as non-retryable made first load fail outright.
+    const calls: Array<{ fromBlock: bigint; toBlock: bigint }> = [];
+    const client = clientWith(async (args) => {
+      calls.push({ fromBlock: args.fromBlock, toBlock: args.toBlock });
+      if (args.toBlock - args.fromBlock + 1n > 200n) {
+        const error = new Error('HTTP request failed.') as Error & {
+          status: number;
+          details: string;
+        };
+        error.status = 400;
+        error.details = 'Received an unexpected status code from https://sepolia.base.org';
+        throw error;
+      }
+      return [];
+    });
+
+    vi.useFakeTimers();
+    try {
+      const run = scanRange({
+        client,
+        registryAddress: REGISTRY,
+        fromBlock: 0n,
+        toBlock: 4_019n,
+        chunkSize: 4_020,
+      });
+      await vi.runAllTimersAsync();
+      const result = await run;
+
+      expect(result.scannedTo).toBe(4_019n);
+      const spans = calls.map((c) => c.toBlock - c.fromBlock + 1n);
+      // 4020 -> 2010 -> 1005 -> 502 -> 251 -> 125, then success.
+      expect(spans.slice(0, 5)).toEqual([4_020n, 2_010n, 1_005n, 502n, 251n]);
+      expect(spans[5]).toBe(125n);
+      expect(spans.slice(5).every((span) => span <= 125n)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('still shrinks when the provider states no number', async () => {
     const calls: Array<{ fromBlock: bigint; toBlock: bigint }> = [];
     const client = clientWith(async (args) => {
