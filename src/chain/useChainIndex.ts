@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { baseSepolia } from 'viem/chains';
-import { makePublicClient, scanRange } from './registry';
+import { findDeployBlock, makePublicClient, scanRange } from './registry';
 import { readCache, writeCache } from './cache';
 import { deriveIndex, type ChainIndex } from '../state/derive';
 import { useSettings } from '../settings/useSettings';
@@ -23,10 +23,14 @@ export function useChainIndex(onProgress?: (p: ScanProgress) => void) {
   const rpcUrl = settings.rpcUrl;
   const registryAddress = settings.registryAddress;
   const chunkSize = settings.scanChunkSize;
-  const startBlock = BigInt(settings.scanStartBlock || '0');
+  // Empty means "discover it from chain". A literal 0 is treated the same:
+  // scanning from genesis is never correct for a deployed registry, and every
+  // public Base Sepolia RPC rejects a ~48M-block log range outright.
+  const configuredStart = BigInt(settings.scanStartBlock || '0');
+  const discoverStart = configuredStart === 0n;
 
   return useQuery({
-    queryKey: ['chain-index', baseSepolia.id, registryAddress, rpcUrl, chunkSize, startBlock.toString()],
+    queryKey: ['chain-index', baseSepolia.id, registryAddress, rpcUrl, chunkSize, configuredStart.toString()],
     enabled: registryAddress !== '',
     queryFn: async (): Promise<ChainIndex> => {
       if (registryAddress === '') {
@@ -38,8 +42,20 @@ export function useChainIndex(onProgress?: (p: ScanProgress) => void) {
       const cached = await readCache(registryAddress, baseSepolia.id);
       const records = cached?.records ?? [];
       const signers = cached?.signers ?? [];
-      const from = cached !== null ? cached.scannedTo + 1n : startBlock;
 
+      let startBlock = configuredStart;
+      if (cached === null && discoverStart) {
+        const detected = await findDeployBlock(client, registryAddress, latestBlock);
+        if (detected === null) {
+          throw new UiError(
+            'REGISTRY_NOT_CONFIGURED',
+            `no contract code at ${registryAddress} on Base Sepolia`,
+          );
+        }
+        startBlock = detected;
+      }
+
+      const from = cached !== null ? cached.scannedTo + 1n : startBlock;
       let allRecords = records;
       let allSigners = signers;
       let scannedTo = cached?.scannedTo ?? startBlock - 1n;

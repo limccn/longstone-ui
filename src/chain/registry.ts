@@ -126,15 +126,54 @@ export interface ScanArgs {
   onProgress?: (done: bigint, total: bigint) => void;
 }
 
-const MAX_RETRIES = 4;
+const MAX_RETRIES = 6;
+
+/** Provider error text can land in any of these fields depending on transport. */
+function errorText(error: unknown): string {
+  const parts: string[] = [];
+  if (error instanceof Error) parts.push(error.message);
+  else parts.push(String(error));
+  const detail = error as { details?: unknown; shortMessage?: unknown; cause?: unknown };
+  if (typeof detail.details === 'string') parts.push(detail.details);
+  if (typeof detail.shortMessage === 'string') parts.push(detail.shortMessage);
+  if (detail.cause instanceof Error) parts.push(detail.cause.message);
+  return parts.join(' | ');
+}
+
+const RATE_LIMIT = /429|rate limit|too many/i;
+/**
+ * A provider-imposed range cap. The wording varies by provider — Base's public
+ * RPC says "eth_getLogs is limited to a 200 range", others say "block range is
+ * too large" or "exceeds max block range". The failure is not transient: it
+ * will never succeed for this window, so the fix is a smaller window, not a
+ * longer wait.
+ */
+const RANGE_CAP = /limited to|block range|range is too|too (?:large|wide|many blocks)|exceeds?/i;
 
 /**
- * Chunked getLogs scan with exponential backoff + chunk halving on 429
- * (longstone §5 parity). Never uses the `pending` tag (M1-7).
+ * Pull the provider's stated block limit out of the message when it gives one
+ * ("limited to a 200 range" -> 200). Returns null when no number is stated.
+ */
+function statedRangeLimit(message: string): number | null {
+  const match = /(?:limited to|exceeds|maximum of|max of)\s*(?:a\s+)?(\d{1,7})/i.exec(message);
+  if (match?.[1] === undefined) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/**
+ * Chunked getLogs scan with exponential backoff + chunk reduction on rate
+ * limits *and* provider range caps (longstone §5 parity). Never uses the
+ * `pending` tag (M1-7).
+ *
+ * The provider's own block-range cap is discovered at runtime rather than
+ * assumed: Base Sepolia's public RPC allows 200 blocks, far below what a
+ * first-load scan needs. Once discovered, the smaller size is adopted for the
+ * rest of the scan instead of being re-learned chunk by chunk.
  */
 export async function scanRange(args: ScanArgs): Promise<ScanResult> {
   const { client, registryAddress, fromBlock, toBlock, onProgress } = args;
-  let chunkSize = args.chunkSize;
+  let chunkSize = Math.max(1, args.chunkSize);
 
   const records: MemoryEventRecord[] = [];
   const signers: SignerRecord[] = [];
@@ -145,9 +184,9 @@ export async function scanRange(args: ScanArgs): Promise<ScanResult> {
     let logs: Log[] | null = null;
     let backoff = 400;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
-      // Recompute the window every attempt: halving the chunk must actually
-      // shrink the range being retried, otherwise a 429 on an oversized range
-      // repeats the same oversized request.
+      // Recompute the window every attempt: shrinking the chunk must actually
+      // shrink the range being retried, otherwise an oversized range repeats
+      // the same oversized request.
       const span = BigInt(Math.max(1, chunkSize));
       const end = cursor + span - 1n > toBlock ? toBlock : cursor + span - 1n;
       try {
@@ -160,11 +199,23 @@ export async function scanRange(args: ScanArgs): Promise<ScanResult> {
         cursor = end + 1n;
         break;
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
         if (attempt === MAX_RETRIES) throw error;
-        // Rate limits and oversized ranges both benefit from a smaller window.
-        if (/429|rate limit|too many|block range|range is too/i.test(message)) {
-          chunkSize = Math.max(1_000, Math.floor(chunkSize / 2));
+        const message = errorText(error);
+        const requested = Number(end - cursor + 1n);
+        if (RATE_LIMIT.test(message)) {
+          chunkSize = Math.max(1, Math.floor(chunkSize / 2));
+        } else if (RANGE_CAP.test(message)) {
+          // Adopt the provider's stated limit when it gives one, with headroom
+          // for the next block being included; otherwise halve. Never shrink
+          // below 1, and always make progress even if the cap is smaller than
+          // one block's worth (a single-block window is the floor).
+          const stated = statedRangeLimit(message);
+          const next =
+            stated !== null ? stated : Math.floor(chunkSize / 2);
+          chunkSize = Math.max(1, Math.min(requested - 1, next));
+        } else if (!/timeout|network|fetch failed|ECONNRESET|503|502|504/i.test(message)) {
+          // Unknown and non-transient: fail fast rather than burn retries.
+          throw error;
         }
         await sleep(backoff);
         backoff *= 2;
@@ -181,6 +232,43 @@ export async function scanRange(args: ScanArgs): Promise<ScanResult> {
   }
 
   return { records, signers, scannedTo: toBlock };
+}
+
+/**
+ * Find the block a registry was deployed at, so a scan starts there instead of
+ * at genesis.
+ *
+ * Scanning from block 0 on Base Sepolia is not merely slow: the range spans
+ * ~48M blocks and every public provider rejects it. The deploy block is the
+ * true lower bound for this contract's logs, so discovering it removes both
+ * problems. `eth_getCode` at a historical block is cheap and universally
+ * supported, unlike block-range-limited log queries.
+ *
+ * Returns null when the address has no code at the tip (not deployed, wrong
+ * chain, or a typo) — callers surface that as a configuration error rather
+ * than scanning a range that can never contain anything.
+ */
+export async function findDeployBlock(
+  client: PublicClient,
+  registryAddress: `0x${string}`,
+  latestBlock: bigint,
+): Promise<bigint | null> {
+  const codeAt = async (block: bigint): Promise<boolean> => {
+    const code = await client.getCode({ address: registryAddress, blockNumber: block });
+    return code !== undefined && code !== '0x';
+  };
+
+  if (!(await codeAt(latestBlock))) return null;
+
+  // Invariant: no code at `lo`, code at `hi`. Narrow until adjacent.
+  let lo = 0n;
+  let hi = latestBlock;
+  while (lo + 1n < hi) {
+    const mid = (lo + hi) / 2n;
+    if (await codeAt(mid)) hi = mid;
+    else lo = mid;
+  }
+  return hi;
 }
 
 export { memoryRegistryAbi };

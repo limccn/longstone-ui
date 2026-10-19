@@ -16,8 +16,16 @@ export const DEFAULT_SETTINGS: Settings = {
   ipfsGateway:
     import.meta.env.VITE_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud/ipfs',
   hisaishiUrl: '',
-  scanChunkSize: 10_000,
-  scanStartBlock: '0',
+  // Base Sepolia's public RPC caps eth_getLogs at 200 blocks ("eth_getLogs is
+  // limited to a 200 range"), so a 10k default fails on the very first chunk
+  // and can never succeed. Starting at the cap keeps first load working out of
+  // the box; scanRange still adapts down when a provider states a smaller cap
+  // or rejects this one.
+  scanChunkSize: 200,
+  // Empty = discover the registry's deploy block from chain. Only set this to
+  // skip that discovery (e.g. a provider that cannot serve historical
+  // eth_getCode).
+  scanStartBlock: '',
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -93,11 +101,14 @@ export function loadSettings(): Settings {
     if (typeof parsed.scanChunkSize === 'number') {
       settings.scanChunkSize = Math.min(
         50_000,
-        Math.max(1_000, Math.floor(parsed.scanChunkSize)),
+        Math.max(1, Math.floor(parsed.scanChunkSize)),
       );
     }
     if (typeof parsed.scanStartBlock === 'string') {
-      settings.scanStartBlock = parsed.scanStartBlock.replace(/[^0-9]/g, '') || '0';
+      // Blank stays blank (= auto-detect the deploy block). A blank must not be
+      // coerced to '0', or saving other settings would silently wipe the
+      // user's choice and reintroduce genesis scanning.
+      settings.scanStartBlock = parsed.scanStartBlock.replace(/[^0-9]/g, '');
     }
     return settings;
   } catch {

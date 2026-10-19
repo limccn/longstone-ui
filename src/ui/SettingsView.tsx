@@ -106,22 +106,33 @@ export function SettingsView() {
           <input
             type="number"
             data-testid="settings-chunk"
-            min={1000}
+            min={1}
             max={50000}
             value={draft.scanChunkSize}
             onChange={(event) => set('scanChunkSize', Number(event.target.value))}
           />
         </label>
+        <p className="hint">
+          Providers cap how many blocks one log query may span — Base Sepolia's
+          public RPC allows 200. Lower this if scans fail; the scanner also
+          adapts automatically when a provider states its limit.
+        </p>
 
         <label>
-          Scan start block (registry deploy block)
+          Scan start block (blank = detect the registry's deploy block)
           <input
             data-testid="settings-start"
             className="mono"
+            placeholder="auto"
             value={draft.scanStartBlock}
             onChange={(event) => set('scanStartBlock', event.target.value.replace(/[^0-9]/g, ''))}
           />
         </label>
+        <p className="hint">
+          Leave blank to start where the contract was deployed. Scanning from an
+          earlier block is wasted work at best, and from block 0 the range is too
+          large for public RPCs to serve at all.
+        </p>
 
         <div className="row">
           <button type="button" data-testid="settings-save" onClick={save}>

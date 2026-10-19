@@ -39,7 +39,12 @@ export function e2eSettings(fixture: ChainFixture) {
     // Loopback gateway served by the spec's route interception.
     ipfsGateway: 'http://127.0.0.1:4173/ipfs',
     hisaishiUrl: '',
-    scanChunkSize: 10_000,
+    // 200 mirrors what the real Base Sepolia RPC enforces, so the e2e suite
+    // exercises the same chunking production sees. The start block is still
+    // pinned to the fixture's deploy block: the local Hardhat node serves
+    // eth_getCode at any block, so auto-detection works there, but pinning
+    // keeps scan-call assertions deterministic.
+    scanChunkSize: 200,
     scanStartBlock: fixture.deployBlock,
   };
 }

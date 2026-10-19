@@ -5,7 +5,7 @@ import {
   type Log,
 } from 'viem';
 import { memoryRegistryAbi, type Commitment } from '@menhir/core';
-import { decodeLog, isSignerRecord, scanRange } from '../src/chain/registry';
+import { decodeLog, findDeployBlock, isSignerRecord, scanRange } from '../src/chain/registry';
 
 const REGISTRY = '0x4e6787a21acf21030d3b908b6160d0e09cd441a9' as `0x${string}`;
 const OWNER = '0x1111111111111111111111111111111111111111' as const;
@@ -224,6 +224,115 @@ describe('scanRange — chunked scan with retry/halving', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('adopts the provider-stated block cap instead of failing', async () => {
+    // Mirrors the real Base Sepolia RPC: "eth_getLogs is limited to a 200
+    // range". The old matcher only knew about 429s, so this was an
+    // unrecoverable first-load failure in production.
+    const calls: Array<{ fromBlock: bigint; toBlock: bigint }> = [];
+    const client = clientWith(async (args) => {
+      calls.push({ fromBlock: args.fromBlock, toBlock: args.toBlock });
+      if (args.toBlock - args.fromBlock + 1n > 200n) {
+        throw new Error('eth_getLogs is limited to a 200 range');
+      }
+      return [];
+    });
+
+    vi.useFakeTimers();
+    try {
+      const run = scanRange({
+        client,
+        registryAddress: REGISTRY,
+        fromBlock: 0n,
+        toBlock: 1_000n,
+        chunkSize: 10_000,
+      });
+      await vi.runAllTimersAsync();
+      const result = await run;
+
+      expect(result.scannedTo).toBe(1_000n);
+      // The retried window honours the stated cap exactly.
+      expect(calls[1]!.toBlock - calls[1]!.fromBlock + 1n).toBe(200n);
+      // And every window after the first failure fits.
+      for (const call of calls.slice(1)) {
+        expect(call.toBlock - call.fromBlock + 1n).toBeLessThanOrEqual(200n);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('still shrinks when the provider states no number', async () => {
+    const calls: Array<{ fromBlock: bigint; toBlock: bigint }> = [];
+    const client = clientWith(async (args) => {
+      calls.push({ fromBlock: args.fromBlock, toBlock: args.toBlock });
+      if (args.toBlock - args.fromBlock + 1n > 500n) {
+        throw new Error('block range is too wide');
+      }
+      return [];
+    });
+
+    vi.useFakeTimers();
+    try {
+      const run = scanRange({
+        client,
+        registryAddress: REGISTRY,
+        fromBlock: 0n,
+        toBlock: 2_000n,
+        chunkSize: 2_000,
+      });
+      await vi.runAllTimersAsync();
+      expect((await run).scannedTo).toBe(2_000n);
+      expect(calls.length).toBeGreaterThan(1);
+      // Halving is gradual: the retry of a failed window must ask for strictly
+      // less, and the scan must converge on a size the provider accepts rather
+      // than looping on the same oversized request. Windows *after* the first
+      // success are all the converged size, so only the retry prefix shrinks.
+      const windows = calls.map((c) => c.toBlock - c.fromBlock + 1n);
+      expect(windows[0]).toBe(2_000n); // the initial, rejected request
+      expect(windows[1]!).toBeLessThan(windows[0]!);
+      expect(windows.slice(1).every((w) => w <= 1_000n)).toBe(true);
+      expect(windows.at(-1)!).toBeLessThanOrEqual(500n);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('fails fast on a non-retryable error instead of exhausting retries', async () => {
+    let attempts = 0;
+    const client = clientWith(async () => {
+      attempts += 1;
+      throw new Error('execution reverted: not a log query problem');
+    });
+    await expect(
+      scanRange({
+        client,
+        registryAddress: REGISTRY,
+        fromBlock: 0n,
+        toBlock: 10n,
+        chunkSize: 10,
+      }),
+    ).rejects.toThrow('execution reverted');
+    // One attempt, no sleeps burned on something that can never succeed.
+    expect(attempts).toBe(1);
+  });
+
+  it('detects the deploy block by binary search and rejects an empty address', async () => {
+    const DEPLOY = 500n;
+    const probe = async (args: { address: `0x${string}`; blockNumber?: bigint }) => {
+      const block = args.blockNumber ?? 0n;
+      return block >= DEPLOY ? ('0x6080' as const) : ('0x' as const);
+    };
+    const found = await findDeployBlock({ getCode: probe } as never, REGISTRY, 1_000n);
+    expect(found).toBe(DEPLOY);
+
+    const empty = await findDeployBlock(
+      { getCode: async () => '0x' } as never,
+      REGISTRY,
+      1_000n,
+    );
+    expect(empty).toBeNull();
   });
 
   it('propagates hard errors after retries are exhausted', async () => {

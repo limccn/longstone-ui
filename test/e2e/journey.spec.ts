@@ -7,6 +7,39 @@ test.describe('longstone-ui e2e — Base Sepolia chain semantics (local node)', 
     await serveGateway(page);
   });
 
+  test('blank scan start auto-detects the deploy block instead of scanning genesis', async ({
+    page,
+  }) => {
+    // Regression: the default used to be block 0 with a 10k chunk, which every
+    // public Base Sepolia RPC rejects ("eth_getLogs is limited to a 200
+    // range"). The e2e fixture always pinned the deploy block, so the broken
+    // path was never exercised. Boot with it blank, exactly as a first-time
+    // visitor does, and assert the timeline still fills.
+    await page.addInitScript(() => {
+      const raw = localStorage.getItem('longstone-ui.settings.v1');
+      if (raw === null) return;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      parsed['scanStartBlock'] = '';
+      localStorage.setItem('longstone-ui.settings.v1', JSON.stringify(parsed));
+    });
+
+    const getCodeCalls: string[] = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && (request.postData() ?? '').includes('eth_getCode')) {
+        getCodeCalls.push(request.postData() ?? '');
+      }
+    });
+
+    await connectWallet(page);
+    await expect(page.getByTestId('timeline-row')).toHaveCount(3, { timeout: 30_000 });
+
+    // Auto-detection must have probed for code rather than starting at 0.
+    expect(getCodeCalls.length).toBeGreaterThan(0);
+    for (const body of getCodeCalls) {
+      expect(body).not.toContain('"fromBlock":"0x0"');
+    }
+  });
+
   test('connect → scan → timeline shows anchored memories with deep/active badges', async ({
     page,
   }) => {
