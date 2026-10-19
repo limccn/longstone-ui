@@ -35,6 +35,9 @@ jobs:
       - name: Assemble workspace
         working-directory: workspace
         run: |
+          # `menhir/contracts` is deliberately absent: CI verifies the app and
+          # the core library it imports, not the Solidity project (which needs
+          # its own artifacts build and has no deploy step here).
           printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -45,6 +48,13 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @menhir/core build
+        working-directory: workspace
+      # The digest rules are the cross-component contract: Solidity, the
+      # browser, and scripts all rely on @menhir/core agreeing byte-for-byte.
+      # Its tests must gate the app, not run only when someone remembers.
+      - run: pnpm --filter @menhir/core test
+        working-directory: workspace
+      - run: pnpm --filter @menhir/core typecheck
         working-directory: workspace
       - run: pnpm --dir app typecheck
         working-directory: workspace
