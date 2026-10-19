@@ -39,6 +39,10 @@ jobs:
           # the core library it imports, not the Solidity project (which needs
           # its own artifacts build and has no deploy step here).
           printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
+          # No repo is checked out at the workspace root, so the assembled
+          # workspace needs its own manifest: pnpm/action-setup reads
+          # `packageManager` from here to pick the pnpm version.
+          printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -74,6 +78,12 @@ jobs:
       matrix:
         platform: [vercel, cloudflare]
     runs-on: ubuntu-latest
+    env:
+      # Step-level `if` cannot read the `secrets` context directly. Project the
+      # values into env so each platform's deploy steps skip cleanly until its
+      # secrets are configured, instead of failing every push to main.
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: Checkout longstone-ui
         uses: actions/checkout@v4
@@ -89,6 +99,7 @@ jobs:
         working-directory: workspace
         run: |
           printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
+          printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -106,7 +117,7 @@ jobs:
       # steps because GitHub expressions have no ternary: the common
       # `cond && '' || '--prod'` idiom is wrong (empty string is falsy).
       - name: Deploy preview to Vercel
-        if: matrix.platform == 'vercel' && github.event_name == 'pull_request'
+        if: matrix.platform == 'vercel' && github.event_name == 'pull_request' && env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -115,7 +126,7 @@ jobs:
           working-directory: workspace/app
 
       - name: Deploy production to Vercel
-        if: matrix.platform == 'vercel' && github.event_name != 'pull_request'
+        if: matrix.platform == 'vercel' && github.event_name != 'pull_request' && env.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -138,7 +149,7 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare Pages
-        if: matrix.platform == 'cloudflare'
+        if: matrix.platform == 'cloudflare' && env.CLOUDFLARE_API_TOKEN != ''
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
