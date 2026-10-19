@@ -44,11 +44,11 @@ jobs:
           # `packageManager` from here to pick the pnpm version.
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       - uses: pnpm/action-setup@v4
+      # No lockfile is checked in by either repo, so setup-node's pnpm cache
+      # has nothing to key on (it would fail looking for workspace/pnpm-lock.yaml).
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: workspace/pnpm-lock.yaml
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @menhir/core build
@@ -104,8 +104,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: workspace/pnpm-lock.yaml
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @menhir/core build
