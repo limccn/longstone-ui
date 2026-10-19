@@ -38,7 +38,7 @@ jobs:
           # `menhir/contracts` is deliberately absent: CI verifies the app and
           # the core library it imports, not the Solidity project (which needs
           # its own artifacts build and has no deploy step here).
-          printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
+          printf 'packages:\n  - "app"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
           # No repo is checked out at the workspace root, so the assembled
           # workspace needs its own manifest: pnpm/action-setup reads
           # `packageManager` from here to pick the pnpm version.
@@ -102,7 +102,7 @@ jobs:
       - name: Assemble workspace
         working-directory: workspace
         run: |
-          printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
+          printf 'packages:\n  - "app"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       # The action runs at the runner's workspace root (where no repo is
       # checked out), so point it at the assembled workspace's manifest.
