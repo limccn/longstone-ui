@@ -1,0 +1,140 @@
+name: deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+# `package.json` depends on `@menhir/core` via `workspace:*`, and this repo is
+# one package of the MemoryOverEth workspace. CI assembles that workspace:
+#   workspace/
+#   ├── pnpm-workspace.yaml
+#   ├── menhir/          (sibling repo; @menhir/core lives in menhir/ts)
+#   └── app/             (this repo)
+# The menhir checkout needs a token with read access to that repo.
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout longstone-ui
+        uses: actions/checkout@v4
+        with:
+          path: workspace/app
+      - name: Checkout menhir (@menhir/core)
+        uses: actions/checkout@v4
+        with:
+          repository: limccn/menhir
+          token: ${{ secrets.MENHIR_REPO_TOKEN || github.token }}
+          path: workspace/menhir
+      - name: Assemble workspace
+        working-directory: workspace
+        run: |
+          printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: workspace/pnpm-lock.yaml
+      - run: pnpm install --no-frozen-lockfile
+        working-directory: workspace
+      - run: pnpm --filter @menhir/core build
+        working-directory: workspace
+      - run: pnpm --dir app typecheck
+        working-directory: workspace
+      - run: pnpm --dir app test
+        working-directory: workspace
+      - run: pnpm --dir app build
+        working-directory: workspace
+      - run: pnpm --dir app audit
+        working-directory: workspace
+      - run: pnpm audit --prod
+        working-directory: workspace
+
+  deploy:
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [vercel, cloudflare]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout longstone-ui
+        uses: actions/checkout@v4
+        with:
+          path: workspace/app
+      - name: Checkout menhir (@menhir/core)
+        uses: actions/checkout@v4
+        with:
+          repository: limccn/menhir
+          token: ${{ secrets.MENHIR_REPO_TOKEN || github.token }}
+          path: workspace/menhir
+      - name: Assemble workspace
+        working-directory: workspace
+        run: |
+          printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: workspace/pnpm-lock.yaml
+      - run: pnpm install --no-frozen-lockfile
+        working-directory: workspace
+      - run: pnpm --filter @menhir/core build
+        working-directory: workspace
+      - run: pnpm --dir app build
+        working-directory: workspace
+
+      # PR → preview; push to main or a tag → production. Kept as separate
+      # steps because GitHub expressions have no ternary: the common
+      # `cond && '' || '--prod'` idiom is wrong (empty string is falsy).
+      - name: Deploy preview to Vercel
+        if: matrix.platform == 'vercel' && github.event_name == 'pull_request'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: workspace/app
+
+      - name: Deploy production to Vercel
+        if: matrix.platform == 'vercel' && github.event_name != 'pull_request'
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: workspace/app
+          vercel-args: '--prod'
+
+      - name: Resolve Cloudflare Pages branch
+        id: cf-ref
+        if: matrix.platform == 'cloudflare'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "branch=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        if: matrix.platform == 'cloudflare'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workspace/app
+          command: >-
+            pages deploy dist
+            --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'longstone-ui' }}
+            --branch=${{ steps.cf-ref.outputs.branch }}

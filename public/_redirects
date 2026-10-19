@@ -1,0 +1,3 @@
+# SPA fallback. Cloudflare Pages must NOT emit a top-level 404.html or it
+# takes priority over this rule; the parity test asserts none is produced.
+/* /index.html 200

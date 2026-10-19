@@ -1,0 +1,13 @@
+# Cloudflare Pages headers — must stay byte-for-byte equivalent (by
+# key/value) to the "/(.*)" block in vercel.json. The parity test
+# test/deploy-parity.test.ts enforces this; edit both files together.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://*.walletconnect.com https://*.walletconnect.org https://*.reown.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  X-Frame-Options: DENY
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
