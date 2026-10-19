@@ -164,14 +164,17 @@ jobs:
             echo "branch=main" >> "$GITHUB_OUTPUT"
           fi
 
+      # `cloudflare/wrangler-action` installs wrangler with the project's
+      # package manager. Inside this pnpm workspace npm cannot read the
+      # `workspace:*` dependency, and pnpm refuses wrangler's workerd postinstall
+      # (ERR_PNPM_IGNORED_BUILDS). `npx` with an explicit version installs
+      # wrangler into its own cache instead, leaving the workspace untouched.
       - name: Deploy to Cloudflare Pages
         if: matrix.platform == 'cloudflare' && env.CLOUDFLARE_API_TOKEN != ''
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workspace/app
-          command: >-
-            pages deploy dist
-            --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'longstone-ui' }}
-            --branch=${{ steps.cf-ref.outputs.branch }}
+        working-directory: workspace/app
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          npx --yes wrangler@4.151.1 pages deploy dist
+          --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'longstone-ui' }}
+          --branch=${{ steps.cf-ref.outputs.branch }}
