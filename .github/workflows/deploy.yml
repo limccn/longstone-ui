@@ -43,7 +43,11 @@ jobs:
           # workspace needs its own manifest: pnpm/action-setup reads
           # `packageManager` from here to pick the pnpm version.
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
+      # The action runs at the runner's workspace root (where no repo is
+      # checked out), so point it at the assembled workspace's manifest.
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: workspace/package.json
       # No lockfile is checked in by either repo, so setup-node's pnpm cache
       # has nothing to key on (it would fail looking for workspace/pnpm-lock.yaml).
       - uses: actions/setup-node@v4
@@ -100,7 +104,11 @@ jobs:
         run: |
           printf 'packages:\n  - "app"\n  - "menhir/ts"\n' > pnpm-workspace.yaml
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
+      # The action runs at the runner's workspace root (where no repo is
+      # checked out), so point it at the assembled workspace's manifest.
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: workspace/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 24
