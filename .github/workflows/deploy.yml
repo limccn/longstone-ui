@@ -68,8 +68,13 @@ jobs:
         working-directory: workspace
       - run: pnpm --dir app test
         working-directory: workspace
+      # Bake the canonical registry address into the bundle. The app reads it
+      # at build time; without this the deployed UI starts with an empty
+      # registry and asks the visitor to configure one.
       - run: pnpm --dir app build
         working-directory: workspace
+        env:
+          VITE_REGISTRY_ADDRESS: ${{ vars.VITE_REGISTRY_ADDRESS }}
       - run: pnpm --dir app audit
         working-directory: workspace
       - run: pnpm audit --prod
@@ -116,8 +121,13 @@ jobs:
         working-directory: workspace
       - run: pnpm --filter @menhir/core build
         working-directory: workspace
+      # Bake the canonical registry address into the bundle. The app reads it
+      # at build time; without this the deployed UI starts with an empty
+      # registry and asks the visitor to configure one.
       - run: pnpm --dir app build
         working-directory: workspace
+        env:
+          VITE_REGISTRY_ADDRESS: ${{ vars.VITE_REGISTRY_ADDRESS }}
 
       # PR → preview; push to main or a tag → production. Kept as separate
       # steps because GitHub expressions have no ternary: the common
