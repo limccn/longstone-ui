@@ -1,8 +1,17 @@
 {
   "name": "longstone-ui",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
+  "description": "Static browser for MemoryOverEth memories: browse, verify and manage on-chain commitments.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/limccn/longstone-ui.git"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
