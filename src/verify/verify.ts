@@ -8,7 +8,7 @@ import {
 } from '@limccn/menhir-core';
 import { keccak256, type PublicClient } from 'viem';
 import { toUiError } from '../errors';
-import { fetchFromGateway } from '../gateway/client';
+import { fetchContentByDigest, fetchFromGateway } from '../gateway/client';
 import type { Address, Bytes32 } from '@limccn/menhir-core';
 
 export interface CommitmentReader {
@@ -103,7 +103,15 @@ function emptyResult(mode: VerifyResult['mode']): VerifyResult {
 export async function verifyByCommitmentHash(args: {
   hash: Bytes32;
   reader: CommitmentReader;
+  /** IPFS gateway used when no hisaishi URL is configured. */
   gateway: string;
+  /**
+   * Optional hisaishi base URL. When set, content is fetched by digest through
+   * the gateway, because the pinned CID is not derivable from chain state for
+   * every pin backend (Pinata's CID hashes a dag-pb wrapper). Direct IPFS
+   * retrieval by derived CIDv1-raw remains the fallback.
+   */
+  hisaishiUrl?: string;
   signal?: AbortSignal;
 }): Promise<VerifyResult> {
   const { hash, reader, gateway, signal } = args;
@@ -129,12 +137,27 @@ export async function verifyByCommitmentHash(args: {
         expectedContentHash: commitment.contentHash,
         expectedCidDigest: commitment.cidDigest,
         verdict: 'content-mismatch',
-        message: 'Commitment holds a cidDigest that is not a CIDv1-raw digest.',
+        message: 'Commitment holds a cidDigest that is not a 32-byte sha256.',
       };
     }
 
-    const cid = cidV1RawFromDigest(commitment.cidDigest);
-    const bytes = await fetchFromGateway(gateway, cid, signal);
+    let cid: string;
+    let bytes: Uint8Array;
+    if (args.hisaishiUrl !== undefined && args.hisaishiUrl !== '') {
+      const fetched = await fetchContentByDigest(
+        args.hisaishiUrl,
+        commitment.cidDigest,
+        signal,
+      );
+      cid = fetched.cid;
+      bytes = fetched.bytes;
+    } else {
+      // Raw-block providers store exactly the bytes the digest names. Pinata
+      // does not, which is why the digest route above is preferred when a
+      // gateway is configured.
+      cid = cidV1RawFromDigest(commitment.cidDigest);
+      bytes = await fetchFromGateway(gateway, cid, signal);
+    }
     const sha = cidDigest(bytes);
     const keccak = keccak256(bytes);
     const keccakMatches = keccak === commitment.contentHash;

@@ -3,18 +3,21 @@ import { e2eSettings, loadFixture, type ChainFixture } from './fixture';
 
 export const fixture: ChainFixture = loadFixture();
 
+interface ProviderOptions {
+  owner: `0x${string}`;
+  rpcUrl: string;
+  chainId?: string;
+}
+
 /**
- * Installs a minimal EIP-1193 provider that proxies signing/reads to the
- * local Hardhat node. The node holds the unlocked accounts, so no private
- * key exists in the browser, the scripts, or the repo.
+ * Installs a minimal EIP-1193 provider that proxies reads (and, on the local
+ * node, signing) to an RPC endpoint. Keys never enter the browser: the local
+ * Hardhat node holds unlocked accounts, and the live suite is read-only.
  */
-export async function installWallet(
-  page: Page,
-  options: { chainId?: string } = {},
-): Promise<void> {
-  const settings = e2eSettings(fixture);
+async function installProvider(page: Page, options: ProviderOptions): Promise<void> {
+  const initialChainId = options.chainId ?? '0x14a34';
   await page.addInitScript(
-    ({ owner, rpcUrl, settingsJson, initialChainId }) => {
+    ({ owner, rpcUrl, initialChainId }) => {
       const chainListeners = new Set<(id: string) => void>();
       const accountListeners = new Set<(accounts: string[]) => void>();
       let chainId = initialChainId;
@@ -77,16 +80,54 @@ export async function installWallet(
         configurable: true,
         writable: true,
       });
-      localStorage.setItem('longstone-ui.settings.v1', settingsJson);
       void accountListeners;
     },
     {
-      owner: fixture.owner,
-      rpcUrl: settings.rpcUrl,
-      settingsJson: JSON.stringify(settings),
-      initialChainId: options.chainId ?? '0x14a34',
+      owner: options.owner,
+      rpcUrl: options.rpcUrl,
+      initialChainId,
     },
   );
+}
+
+/**
+ * Local-node wallet: a provider pointing at Hardhat plus the fixture settings
+ * in localStorage, because the fixture's addresses exist only on that node.
+ */
+export async function installWallet(
+  page: Page,
+  options: { chainId?: string } = {},
+): Promise<void> {
+  const settings = e2eSettings(fixture);
+  await installProvider(page, {
+    owner: fixture.owner,
+    rpcUrl: settings.rpcUrl,
+    ...(options.chainId === undefined ? {} : { chainId: options.chainId }),
+  });
+  await page.addInitScript((settingsJson) => {
+    localStorage.setItem('longstone-ui.settings.v1', settingsJson);
+  }, JSON.stringify(settings));
+}
+
+/**
+ * Live wallet: a read-only injected provider for a real owner address.
+ *
+ * It deliberately does NOT write settings, so the app boots from the defaults
+ * baked into the deployed bundle (registry, RPC, IPFS gateway, hisaishi URL).
+ * That makes the live spec a test of the deployment's configuration, not of a
+ * test-injected one. The only value the spec overrides is the scan start block,
+ * to keep the suite to a few `eth_getLogs` windows instead of the ~270 that a
+ * full-history scan from the deploy block requires.
+ */
+export async function installLiveWallet(
+  page: Page,
+  options: { owner: `0x${string}`; rpcUrl?: string; chainId?: string },
+): Promise<void> {
+  await installProvider(page, {
+    owner: options.owner,
+    rpcUrl: options.rpcUrl ?? 'https://sepolia.base.org',
+    ...(options.chainId === undefined ? {} : { chainId: options.chainId }),
+  });
 }
 
 /** Serves the seeded canonical bytes for the fixture CIDs. */

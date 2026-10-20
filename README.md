@@ -41,6 +41,7 @@ Environment (all optional; also editable in Settings):
 | `VITE_RPC_URL` | default RPC (default `https://sepolia.base.org`) |
 | `VITE_REGISTRY_ADDRESS` | `MemoryRegistry` address |
 | `VITE_IPFS_GATEWAY` | IPFS gateway base URL |
+| `VITE_HISAISHI_URL` | remote gateway base URL; enables the Staging view and digest-based verify |
 | `VITE_REOWN_PROJECT_ID` | enables the AppKit modal; unset → injected-only |
 
 No private key is ever read by this app. All signing happens in the wallet.
@@ -54,6 +55,23 @@ corepack pnpm --dir longstone-ui build
 corepack pnpm --dir longstone-ui audit         # bundle/env gate
 node longstone-ui/scripts/e2e.mjs              # local chain + fixture + Playwright
 ```
+
+### Live E2E
+
+`test/e2e/live.spec.ts` runs against the deployed site and is skipped unless
+`LIVE_E2E=1`:
+
+```bash
+LIVE_E2E=1 LIVE_BASE_URL=https://longstone-ui.pages.dev pnpm exec playwright test test/e2e/live.spec.ts
+```
+
+It asserts that the deployed bundle carries the real registry / IPFS / hisaishi
+URLs (a deploy that forgets a build variable fails here), that the timeline
+scans Base Sepolia, that Staging reads the Worker cross-origin, and that Verify
+fetches pinned bytes through the gateway digest route with both digests
+matching. The injected wallet is read-only — no key exists in the browser or
+the repo. Override `LIVE_OWNER`, `LIVE_SCAN_START`, or the endpoint variables
+when pointing it at another deployment.
 
 `scripts/e2e.mjs` starts a local Hardhat node with `--chain-id 84532`,
 deploys and seeds a registry using the node's unlocked accounts, builds the
@@ -70,7 +88,10 @@ Both targets ship identical security headers (enforced by
   must not contain a top-level `404.html`.
 
 CI: `.github/workflows/deploy.yml` runs typecheck → tests → build → audit,
-then deploys previews on PRs and production on `main`/tags.
+then deploys previews on PRs and production on `main`/tags. The build reads
+`VITE_REGISTRY_ADDRESS`, `VITE_HISAISHI_URL`, and `VITE_IPFS_GATEWAY` from
+repository variables; missing values produce an unconfigured bundle, which the
+live E2E rejects.
 
 ## Design track
 

@@ -30,6 +30,7 @@ export function VerifyView() {
           hash: input.trim() as `0x${string}`,
           reader,
           gateway: settings.ipfsGateway,
+          ...(settings.hisaishiUrl === '' ? {} : { hisaishiUrl: settings.hisaishiUrl }),
         }));
       } else {
         setResult(await verifyByCid({ cid: input.trim(), gateway: settings.ipfsGateway }));

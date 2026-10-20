@@ -61,6 +61,41 @@ export async function fetchFromHisaishi(
 }
 
 /**
+ * Fetch content by its retrieval digest (hisaishi `/v1/content?cidDigest=`).
+ *
+ * A commitment holds only `cidDigest`. Pinata's CID hashes its dag-pb wrapper,
+ * so it is not derivable from `sha256(bytes)`; the gateway's row maps digest →
+ * pinned CID. The gateway is trusted for the mapping only — the caller hashes
+ * the returned bytes and compares both digests before reporting success.
+ */
+export async function fetchContentByDigest(
+  baseUrl: string,
+  cidDigest: string,
+  signal?: AbortSignal,
+): Promise<{ cid: string; bytes: Uint8Array }> {
+  const url = `${baseUrl.replace(/\/+$/, '')}/v1/content?cidDigest=${encodeURIComponent(cidDigest)}`;
+  let response: Response;
+  try {
+    response = await fetch(url, init(signal));
+  } catch (error) {
+    throw new UiError('HISAISHI_UNREACHABLE', `gateway unreachable: ${url}`, error);
+  }
+  if (response.status === 404) {
+    throw new UiError('CONTENT_NOT_FOUND', `${cidDigest} is not staged or pinned`);
+  }
+  if (!response.ok) {
+    throw new UiError('HISAISHI_UNREACHABLE', `gateway returned ${response.status}`);
+  }
+  const cid = response.headers.get('x-ipfs-cid');
+  if (cid === null || cid === '') {
+    // Without the CID the view cannot show what was fetched; treat a missing
+    // header as an upstream contract violation rather than inventing a value.
+    throw new UiError('HISAISHI_UNREACHABLE', 'gateway did not return x-ipfs-cid');
+  }
+  return { cid, bytes: new Uint8Array(await response.arrayBuffer()) };
+}
+
+/**
  * The gateway's staging row (hisaishi v0.5 §4, R13).
  *
  * Kept as a local structural type rather than an import: `@limccn/hisaishi-gateway`

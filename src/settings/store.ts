@@ -15,7 +15,10 @@ export const DEFAULT_SETTINGS: Settings = {
     (import.meta.env.VITE_REGISTRY_ADDRESS as `0x${string}` | undefined) ?? '',
   ipfsGateway:
     import.meta.env.VITE_IPFS_GATEWAY ?? 'https://gateway.pinata.cloud/ipfs',
-  hisaishiUrl: '',
+  // Remote (Worker) gateway URL. Baked at build time so a deployed UI can
+  // show staging without asking the visitor to configure anything; blank is
+  // still the default for local development and for builds that do not set it.
+  hisaishiUrl: import.meta.env.VITE_HISAISHI_URL ?? '',
   // Base Sepolia's public RPC caps eth_getLogs at 200 blocks ("eth_getLogs is
   // limited to a 200 range"), so a 10k default fails on the very first chunk
   // and can never succeed. Starting at the cap keeps first load working out of

@@ -68,13 +68,17 @@ jobs:
         working-directory: workspace
       - run: pnpm --dir app test
         working-directory: workspace
-      # Bake the canonical registry address into the bundle. The app reads it
-      # at build time; without this the deployed UI starts with an empty
-      # registry and asks the visitor to configure one.
+      # Bake the live endpoints into the bundle. The app reads them at build
+      # time; without them the deployed UI starts with an empty registry and
+      # asks the visitor to configure everything by hand. The live E2E spec
+      # fails when any of these is missing, so a deploy cannot silently ship
+      # an unconfigured bundle.
       - run: pnpm --dir app build
         working-directory: workspace
         env:
           VITE_REGISTRY_ADDRESS: ${{ vars.VITE_REGISTRY_ADDRESS }}
+          VITE_HISAISHI_URL: ${{ vars.VITE_HISAISHI_URL }}
+          VITE_IPFS_GATEWAY: ${{ vars.VITE_IPFS_GATEWAY }}
       - run: pnpm --dir app audit
         working-directory: workspace
       - run: pnpm audit --prod
@@ -121,13 +125,14 @@ jobs:
         working-directory: workspace
       - run: pnpm --filter @limccn/menhir-core build
         working-directory: workspace
-      # Bake the canonical registry address into the bundle. The app reads it
-      # at build time; without this the deployed UI starts with an empty
-      # registry and asks the visitor to configure one.
+      # Same baked configuration as the verify job. Both jobs build their own
+      # bundle (they are separate runners), so the env must live in both.
       - run: pnpm --dir app build
         working-directory: workspace
         env:
           VITE_REGISTRY_ADDRESS: ${{ vars.VITE_REGISTRY_ADDRESS }}
+          VITE_HISAISHI_URL: ${{ vars.VITE_HISAISHI_URL }}
+          VITE_IPFS_GATEWAY: ${{ vars.VITE_IPFS_GATEWAY }}
 
       # PR → preview; push to main or a tag → production. Kept as separate
       # steps because GitHub expressions have no ternary: the common

@@ -122,6 +122,56 @@ describe('verifyByCommitmentHash — verdict matrix', () => {
     expect(result.message).toContain('502');
     vi.unstubAllGlobals();
   });
+
+  it('fetches by digest through hisaishi when configured', async () => {
+    // Pinata's CID hashes a dag-pb wrapper and cannot be derived from the
+    // on-chain digest; the gateway's row is the digest → CID bridge. The
+    // returned CID is what the view must report — not a derived guess.
+    const pinataCid = 'QmPRmABBWgyZihcsYX9SNFKULAHz3eteSN7PRmQg7kNPNR';
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      expect(url).toContain(`/v1/content?cidDigest=${digest}`);
+      return new Response(bytes as unknown as BodyInit, {
+        status: 200,
+        headers: { 'x-ipfs-cid': pinataCid },
+      });
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const result = await verifyByCommitmentHash({
+      hash: HASH,
+      reader: readerFor(),
+      gateway: 'https://gw.example.org/ipfs',
+      hisaishiUrl: 'https://hisaishi.example.workers.dev',
+    });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(result.verdict).toBe('verified');
+    expect(result.cid).toBe(pinataCid);
+    expect(result.keccakMatches).toBe(true);
+    expect(result.sha256Matches).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it('rejects bytes the gateway substitutes (the mapping is untrusted)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      async () =>
+        new Response(new TextEncoder().encode('substituted') as unknown as BodyInit, {
+          status: 200,
+          headers: { 'x-ipfs-cid': 'QmSubstituted' },
+        }),
+    );
+    const result = await verifyByCommitmentHash({
+      hash: HASH,
+      reader: readerFor(),
+      gateway: 'https://gw.example.org/ipfs',
+      hisaishiUrl: 'https://hisaishi.example.workers.dev',
+    });
+    expect(result.verdict).toBe('content-mismatch');
+    expect(result.sha256Matches).toBe(false);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('verifyByCid — honesty semantics', () => {
