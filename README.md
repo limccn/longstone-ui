@@ -62,7 +62,8 @@ node longstone-ui/scripts/e2e.mjs              # local chain + fixture + Playwri
 `LIVE_E2E=1`:
 
 ```bash
-LIVE_E2E=1 LIVE_BASE_URL=https://longstone-ui.pages.dev pnpm exec playwright test test/e2e/live.spec.ts
+LIVE_E2E=1 LIVE_BASE_URL=https://longstone-ui.pages.dev \
+  corepack pnpm --dir longstone-ui exec playwright test test/e2e/live.spec.ts
 ```
 
 It asserts that the deployed bundle carries the real registry / IPFS / hisaishi
