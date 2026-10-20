@@ -105,17 +105,21 @@ export function StagingView() {
           </thead>
           <tbody>
             {memories.map((memory) => (
-              <tr key={`${memory.cid}:${memory.contentHash}`} data-testid="staging-row">
+              // `(owner, contentHash)` is the row identity (hisaishi R1). Two
+              // owners staging identical bytes share one CID, so keying on the
+              // CID alone would collide.
+              <tr
+                key={`${memory.owner}:${memory.contentHash}`}
+                data-testid="staging-row"
+              >
                 <td className="mono">{short(memory.cid)}</td>
                 <td className="mono">{short(memory.contentHash)}</td>
                 <td>
                   <span className={statusClass(memory.status)}>{memory.status}</span>
                 </td>
-                <td>{memory.tags.join(', ')}</td>
+                <td>{memory.tags.length === 0 ? '—' : memory.tags.join(', ')}</td>
                 <td className="mono">
-                  {memory.txHash === null || memory.txHash === undefined
-                    ? '—'
-                    : short(memory.txHash)}
+                  {memory.txHash === null ? '—' : short(memory.txHash)}
                 </td>
               </tr>
             ))}

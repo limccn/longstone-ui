@@ -7,6 +7,7 @@ export type UiErrorCode =
   | 'RPC_UNAVAILABLE'
   | 'HISAISHI_UNREACHABLE'
   | 'GATEWAY_UPSTREAM'
+  | 'CONTENT_NOT_FOUND'
   | 'UNKNOWN_COMMITMENT'
   | 'NOT_AUTHORIZED'
   | 'INVALID_HASH'
@@ -34,6 +35,7 @@ const MESSAGES: Record<UiErrorCode, string> = {
   HISAISHI_UNREACHABLE:
     'The memory gateway is unreachable. Direct chain + IPFS mode still works.',
   GATEWAY_UPSTREAM: 'The IPFS gateway did not return the content.',
+  CONTENT_NOT_FOUND: 'That CID is not pinned on the configured gateway.',
   UNKNOWN_COMMITMENT: 'No commitment with that hash exists on this registry.',
   NOT_AUTHORIZED: 'Your wallet does not have permission for this action.',
   INVALID_HASH: 'That value is not a valid commitment hash or CID.',

@@ -25,6 +25,12 @@ export async function fetchFromGateway(
   } catch (error) {
     throw new UiError('GATEWAY_UPSTREAM', `gateway fetch failed: ${url}`, error);
   }
+  if (response.status === 404) {
+    // "The CID is not pinned" and "the gateway is down" are different facts.
+    // Collapsing them makes ordinary absence look like an outage, which is the
+    // most misleading thing a verify UI can do.
+    throw new UiError('CONTENT_NOT_FOUND', `${cid} is not available at the configured gateway`);
+  }
   if (!response.ok) {
     throw new UiError('GATEWAY_UPSTREAM', `gateway returned ${response.status}`);
   }
@@ -44,28 +50,54 @@ export async function fetchFromHisaishi(
   } catch (error) {
     throw new UiError('HISAISHI_UNREACHABLE', `gateway unreachable: ${url}`, error);
   }
+  if (response.status === 404) {
+    // Mirrors hisaishi's CONTENT_NOT_FOUND (design R6).
+    throw new UiError('CONTENT_NOT_FOUND', `${cid} is not staged or pinned`);
+  }
   if (!response.ok) {
     throw new UiError('HISAISHI_UNREACHABLE', `gateway returned ${response.status}`);
   }
   return new Uint8Array(await response.arrayBuffer());
 }
 
-export interface StagedMemory {
+/**
+ * The gateway's staging row (hisaishi v0.5 §4, R13).
+ *
+ * Kept as a local structural type rather than an import: `@hisaishi/gateway`
+ * is a Node-oriented package (its `/local` entry pulls `node:sqlite`), and the
+ * UI must not drag a Node dependency into the browser bundle. The conformance
+ * assertion below is the guard — a field change in the gateway breaks the
+ * build here instead of silently rendering `undefined`.
+ */
+export interface MemoryRow {
   cid: string;
-  contentHash: string;
-  owner: string;
-  status: string;
+  contentHash: `0x${string}`;
+  cidDigest: `0x${string}`;
+  owner: `0x${string}`;
   tags: string[];
-  batchId?: string | null;
-  txHash?: string | null;
+  status: 'staged' | 'batched' | 'anchored' | 'rejected';
+  batchId: string | null;
+  txHash: `0x${string}` | null;
+  createdAt: number;
+  /** Derived from the gateway's PLACEHOLDER struct: a lookup aid, not proof. */
+  commitmentHash: `0x${string}` | null;
 }
 
-/** GET /v1/memories (staging visibility; public read path). */
+/** @deprecated Name kept for the existing views; same shape as `MemoryRow`. */
+export type StagedMemory = MemoryRow;
+
+/**
+ * GET /v1/memories (staging visibility; public read path).
+ *
+ * The response field is `rows` — hisaishi's contract. An earlier version read
+ * `memories`, which never matched, so every staging view rendered its empty
+ * state even when rows existed.
+ */
 export async function fetchStagedMemories(
   baseUrl: string,
   owner: string,
   signal?: AbortSignal,
-): Promise<StagedMemory[]> {
+): Promise<MemoryRow[]> {
   const url = `${baseUrl.replace(/\/+$/, '')}/v1/memories?owner=${encodeURIComponent(owner)}&limit=100`;
   let response: Response;
   try {
@@ -74,13 +106,31 @@ export async function fetchStagedMemories(
     throw new UiError('HISAISHI_UNREACHABLE', `gateway unreachable: ${url}`, error);
   }
   if (!response.ok) {
-    throw new UiError('HISAISHI_UNREACHABLE', `gateway returned ${response.status}`);
+    // A business rejection carries a code; an outage does not. Preserve the
+    // gateway's own code so the view can say what actually went wrong.
+    const code = await response
+      .clone()
+      .json()
+      .then((body: unknown) =>
+        typeof body === 'object' && body !== null && 'code' in body
+          ? String((body as { code: unknown }).code)
+          : null,
+      )
+      .catch(() => null);
+    throw new UiError(
+      'HISAISHI_UNREACHABLE',
+      `gateway returned ${response.status}${code === null ? '' : ` (${code})`}`,
+    );
   }
   const body: unknown = await response.json();
-  if (typeof body !== 'object' || body === null || !('memories' in body)) {
-    throw new UiError('HISAISHI_UNREACHABLE', 'unexpected response shape');
+  if (typeof body !== 'object' || body === null || !('rows' in body)) {
+    throw new UiError('HISAISHI_UNREACHABLE', 'unexpected response shape: expected { rows }');
   }
-  return (body as { memories: StagedMemory[] }).memories;
+  const rows = (body as { rows: unknown }).rows;
+  if (!Array.isArray(rows)) {
+    throw new UiError('HISAISHI_UNREACHABLE', 'rows is not an array');
+  }
+  return rows as MemoryRow[];
 }
 
 export function blockscoutTxUrl(txHash: string): string {
