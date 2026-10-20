@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { keccak256 } from 'viem';
-import { cidDigest, cidV1Raw, cidV1RawFromDigest, commitmentHash, type Commitment } from '@menhir/core';
+import { cidDigest, cidV1Raw, cidV1RawFromDigest, commitmentHash, type Commitment } from '@limccn/menhir-core';
 import {
   verifyByCid,
   verifyByCommitmentHash,

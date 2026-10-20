@@ -6,7 +6,7 @@ import {
   type PublicClient,
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
-import { bytes32ToTag, memoryRegistryAbi, type Commitment } from '@menhir/core';
+import { bytes32ToTag, memoryRegistryAbi, type Commitment } from '@limccn/menhir-core';
 import type { MemoryEventRecord, SignerRecord } from '../state/derive';
 
 export type { SignerRecord };

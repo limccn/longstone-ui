@@ -31,7 +31,7 @@ log.
 
 Any tag is a UTF-8 string of at most 32 bytes, stored on-chain as
 `bytes32` (right-zero-padded — see `tagToBytes32` / `bytes32ToTag` in
-`@menhir/core`). Tags are free-form; the `layer:*` namespace is convention,
+`@limccn/menhir-core`). Tags are free-form; the `layer:*` namespace is convention,
 not enforcement. Display tags verbatim; do not invent categories the chain
 does not have.
 

@@ -1,5 +1,5 @@
 {
-  "name": "longstone-ui",
+  "name": "@limccn/longstone-ui",
   "version": "0.1.0",
   "private": true,
   "description": "Static browser for MemoryOverEth memories: browse, verify and manage on-chain commitments.",
@@ -25,7 +25,7 @@
     "e2e:full": "node scripts/e2e.mjs"
   },
   "dependencies": {
-    "@menhir/core": "workspace:*",
+    "@limccn/menhir-core": "workspace:*",
     "@reown/appkit": "1.8.24",
     "@reown/appkit-adapter-wagmi": "1.8.24",
     "@tanstack/react-query": "5.104.4",

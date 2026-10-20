@@ -63,7 +63,7 @@ export async function fetchFromHisaishi(
 /**
  * The gateway's staging row (hisaishi v0.5 §4, R13).
  *
- * Kept as a local structural type rather than an import: `@hisaishi/gateway`
+ * Kept as a local structural type rather than an import: `@limccn/hisaishi-gateway`
  * is a Node-oriented package (its `/local` entry pulls `node:sqlite`), and the
  * UI must not drag a Node dependency into the browser bundle. The conformance
  * assertion below is the guard — a field change in the gateway breaks the

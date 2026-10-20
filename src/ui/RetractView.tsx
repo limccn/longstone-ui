@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
-import { memoryRegistryAbi } from '@menhir/core';
+import { memoryRegistryAbi } from '@limccn/menhir-core';
 import { useSettings } from '../settings/useSettings';
 import { useChainIndex } from '../chain/useChainIndex';
 import { statesForOwner } from '../state/derive';

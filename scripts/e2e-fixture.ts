@@ -26,7 +26,7 @@ import {
   type EIP1193Provider,
 } from 'viem';
 import { baseSepolia } from 'viem/chains';
-import { cidDigest, cidV1Raw } from '@menhir/core';
+import { cidDigest, cidV1Raw } from '@limccn/menhir-core';
 
 const RPC = process.env['E2E_RPC_URL'] ?? 'http://127.0.0.1:8545';
 const OUT_DIR = path.resolve('test/e2e');

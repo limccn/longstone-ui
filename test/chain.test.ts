@@ -4,7 +4,7 @@ import {
   encodeEventTopics,
   type Log,
 } from 'viem';
-import { memoryRegistryAbi, type Commitment } from '@menhir/core';
+import { memoryRegistryAbi, type Commitment } from '@limccn/menhir-core';
 import { decodeLog, findDeployBlock, isSignerRecord, scanRange } from '../src/chain/registry';
 
 const REGISTRY = '0x4e6787a21acf21030d3b908b6160d0e09cd441a9' as `0x${string}`;

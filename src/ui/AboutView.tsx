@@ -6,7 +6,7 @@ import { CHAIN, appKitEnabled } from '../wallet/config';
 
 const VERSIONS = [
   { component: 'menhir contracts', version: 'M1 v0.3 (MemoryRegistry)' },
-  { component: '@menhir/core', version: '0.1.0' },
+  { component: '@limccn/menhir-core', version: '0.1.0' },
   { component: 'longstone-ui', version: '0.1.0' },
 ] as const;
 

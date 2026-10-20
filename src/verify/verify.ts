@@ -5,11 +5,11 @@ import {
   commitmentHash,
   memoryRegistryAbi,
   type Commitment,
-} from '@menhir/core';
+} from '@limccn/menhir-core';
 import { keccak256, type PublicClient } from 'viem';
 import { toUiError } from '../errors';
 import { fetchFromGateway } from '../gateway/client';
-import type { Address, Bytes32 } from '@menhir/core';
+import type { Address, Bytes32 } from '@limccn/menhir-core';
 
 export interface CommitmentReader {
   getCommitment(hash: Bytes32): Promise<Commitment>;

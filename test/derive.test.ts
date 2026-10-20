@@ -9,7 +9,7 @@ import {
   type MemoryEventRecord,
   type SignerRecord,
 } from '../src/state/derive';
-import type { Commitment } from '@menhir/core';
+import type { Commitment } from '@limccn/menhir-core';
 
 const OWNER = '0x1111111111111111111111111111111111111111' as const;
 const OTHER = '0x2222222222222222222222222222222222222222' as const;

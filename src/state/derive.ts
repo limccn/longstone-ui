@@ -1,8 +1,8 @@
 /**
- * Derivation rules — parity with menhir spec §2.6 and @menhir/core.
+ * Derivation rules — parity with menhir spec §2.6 and @limccn/menhir-core.
  * Single definition inside the UI; consumes decoded events, pure function.
  */
-import type { Commitment } from '@menhir/core';
+import type { Commitment } from '@limccn/menhir-core';
 
 export interface MemoryEventRecord {
   kind: 'committed' | 'retracted';

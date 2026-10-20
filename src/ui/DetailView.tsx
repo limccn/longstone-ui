@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useChainIndex } from '../chain/useChainIndex';
 import { predecessorOf, successorOf } from '../state/derive';
 import { blockscoutTxUrl } from '../gateway/client';
-import { cidV1RawFromDigest } from '@menhir/core';
+import { cidV1RawFromDigest } from '@limccn/menhir-core';
 
 export function DetailView() {
   const { commitmentHash } = useParams<{ commitmentHash: string }>();
