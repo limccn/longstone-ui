@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react';
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
 import { memoryRegistryAbi } from '@limccn/menhir-core';
 import { useSettings } from '../settings/useSettings';
-import { toUiError } from '../errors';
+import { signersForOwner, toUiError } from '@limccn/longstone-surface';
 import { useChainIndex } from '../chain/useChainIndex';
-import { signersForOwner } from '../state/derive';
 
 const ROLE_COMMIT = 1n;
 const ROLE_RETRACT = 2n;

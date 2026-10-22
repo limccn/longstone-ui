@@ -8,7 +8,7 @@ import {
   successorOf,
   type MemoryEventRecord,
   type SignerRecord,
-} from '../src/state/derive';
+} from '@limccn/longstone-surface';
 import type { Commitment } from '@limccn/menhir-core';
 
 const OWNER = '0x1111111111111111111111111111111111111111' as const;

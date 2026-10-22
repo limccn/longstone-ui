@@ -38,7 +38,7 @@ jobs:
           # `menhir/contracts` is deliberately absent: CI verifies the app and
           # the core library it imports, not the Solidity project (which needs
           # its own artifacts build and has no deploy step here).
-          printf 'packages:\n  - "app"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
+          printf 'packages:\n  - "app"\n  - "app/packages/longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
           # No repo is checked out at the workspace root, so the assembled
           # workspace needs its own manifest: pnpm/action-setup reads
           # `packageManager` from here to pick the pnpm version.
@@ -56,6 +56,12 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @limccn/menhir-core build
+        working-directory: workspace
+      - run: pnpm --filter @limccn/longstone-surface build
+        working-directory: workspace
+      # `longstone-ui` imports the built surface, so the package's own tests
+      # must gate the extraction too (the app suite is a consumer, not the API).
+      - run: pnpm --dir app/packages/longstone-surface test
         working-directory: workspace
       # The digest rules are the cross-component contract: Solidity, the
       # browser, and scripts all rely on @limccn/menhir-core agreeing byte-for-byte.
@@ -111,7 +117,7 @@ jobs:
       - name: Assemble workspace
         working-directory: workspace
         run: |
-          printf 'packages:\n  - "app"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
+          printf 'packages:\n  - "app"\n  - "app/packages/longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       # The action runs at the runner's workspace root (where no repo is
       # checked out), so point it at the assembled workspace's manifest.
@@ -124,6 +130,10 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @limccn/menhir-core build
+        working-directory: workspace
+      # `longstone-ui` imports `@limccn/longstone-surface` through the
+      # workspace, so its types/JS must exist before `app build`.
+      - run: pnpm --filter @limccn/longstone-surface build
         working-directory: workspace
       # Same baked configuration as the verify job. Both jobs build their own
       # bundle (they are separate runners), so the env must live in both.

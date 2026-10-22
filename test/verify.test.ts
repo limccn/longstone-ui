@@ -5,7 +5,7 @@ import {
   verifyByCid,
   verifyByCommitmentHash,
   type CommitmentReader,
-} from '../src/verify/verify';
+} from '@limccn/longstone-surface';
 
 const bytes = new TextEncoder().encode('{"format":"text.v0","text":"hello memory"}');
 const digest = cidDigest(bytes);

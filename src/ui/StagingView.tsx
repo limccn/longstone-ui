@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { useSettings } from '../settings/useSettings';
-import { fetchStagedMemories, type StagedMemory } from '../gateway/client';
-import { toUiError } from '../errors';
+import {
+  fetchStagedMemories,
+  toUiError,
+  type StagedMemory,
+} from '@limccn/longstone-surface';
 
 const STATUS_ORDER = ['staged', 'batched', 'anchored'] as const;
 

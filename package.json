@@ -25,6 +25,7 @@
     "e2e:full": "node scripts/e2e.mjs"
   },
   "dependencies": {
+    "@limccn/longstone-surface": "workspace:*",
     "@limccn/menhir-core": "workspace:*",
     "@reown/appkit": "1.8.24",
     "@reown/appkit-adapter-wagmi": "1.8.24",

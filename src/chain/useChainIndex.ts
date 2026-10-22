@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { baseSepolia } from 'viem/chains';
-import { findDeployBlock, makePublicClient, scanRange } from './registry';
+import {
+  UiError,
+  deriveIndex,
+  findDeployBlock,
+  makePublicClient,
+  scanRange,
+  type ChainIndex,
+} from '@limccn/longstone-surface';
 import { readCache, writeCache } from './cache';
-import { deriveIndex, type ChainIndex } from '../state/derive';
 import { useSettings } from '../settings/useSettings';
-import { UiError } from '../errors';
 
 export interface ScanProgress {
   phase: 'cache' | 'scanning' | 'done';

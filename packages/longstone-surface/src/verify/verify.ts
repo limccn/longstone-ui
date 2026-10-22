@@ -7,8 +7,8 @@ import {
   type Commitment,
 } from '@limccn/menhir-core';
 import { keccak256, type PublicClient } from 'viem';
-import { toUiError } from '../errors';
-import { fetchContentByDigest, fetchFromGateway } from '../gateway/client';
+import { toUiError } from '../errors.js';
+import { fetchContentByDigest, fetchFromGateway } from '../gateway/client.js';
 import type { Address, Bytes32 } from '@limccn/menhir-core';
 
 export interface CommitmentReader {
@@ -99,6 +99,10 @@ function emptyResult(mode: VerifyResult['mode']): VerifyResult {
  * Verify by commitment hash: read the commitment on-chain, derive its
  * expected CID (raw CIDv1 from cidDigest — D-9), fetch bytes from the
  * gateway, compare BOTH digests in-browser, then report deep/active.
+ *
+ * @internal — shells must use `verifyCommitment` (index), which constructs the
+ * chain reader itself. This entry point stays exported for tests and advanced
+ * callers that already own a chain-backed `CommitmentReader`.
  */
 export async function verifyByCommitmentHash(args: {
   hash: Bytes32;

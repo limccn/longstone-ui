@@ -9,12 +9,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  UiError,
   fetchFromGateway,
   fetchFromHisaishi,
   fetchStagedMemories,
   type MemoryRow,
-} from '../src/gateway/client';
-import { UiError } from '../src/errors';
+} from '@limccn/longstone-surface';
 
 const OWNER = `0x${'11'.repeat(20)}` as const;
 

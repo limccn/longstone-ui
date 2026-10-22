@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { useSettings } from '../settings/useSettings';
-import { makePublicClient } from '../chain/registry';
-import { readerFor, verifyByCid, verifyByCommitmentHash, type VerifyResult } from '../verify/verify';
-import { UiError } from '../errors';
+import {
+  UiError,
+  makePublicClient,
+  readerFor,
+  verifyByCid,
+  verifyByCommitmentHash,
+  type VerifyResult,
+} from '@limccn/longstone-surface';
 
 type Mode = 'commitment' | 'cid';
 

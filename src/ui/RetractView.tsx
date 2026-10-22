@@ -3,9 +3,7 @@ import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
 import { memoryRegistryAbi } from '@limccn/menhir-core';
 import { useSettings } from '../settings/useSettings';
 import { useChainIndex } from '../chain/useChainIndex';
-import { statesForOwner } from '../state/derive';
-import { toUiError } from '../errors';
-import { blockscoutTxUrl } from '../gateway/client';
+import { blockscoutTxUrl, statesForOwner, toUiError } from '@limccn/longstone-surface';
 
 const ZERO32 = `0x${'0'.repeat(64)}` as const;
 const HASH_RE = /^0x[0-9a-fA-F]{64}$/;

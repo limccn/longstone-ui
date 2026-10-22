@@ -5,7 +5,7 @@ import {
   type Log,
 } from 'viem';
 import { memoryRegistryAbi, type Commitment } from '@limccn/menhir-core';
-import { decodeLog, findDeployBlock, isSignerRecord, scanRange } from '../src/chain/registry';
+import { decodeLog, findDeployBlock, isSignerRecord, scanRange } from '@limccn/longstone-surface';
 
 const REGISTRY = '0x4e6787a21acf21030d3b908b6160d0e09cd441a9' as `0x${string}`;
 const OWNER = '0x1111111111111111111111111111111111111111' as const;

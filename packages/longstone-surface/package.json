@@ -1,0 +1,44 @@
+{
+  "name": "@limccn/longstone-surface",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Browser-safe verification surface for MemoryOverEth: chain-derived digests, gateway transport, registry scan and typed errors.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/limccn/longstone-ui.git",
+    "directory": "packages/longstone-surface"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build && pnpm test",
+    "publish:npm": "pnpm publish --access public --no-git-checks --registry https://registry.npmjs.org/",
+    "pack:check": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "@limccn/menhir-core": "workspace:*",
+    "viem": "2.57.7"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

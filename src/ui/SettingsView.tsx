@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSettings, updateSettings } from '../settings/useSettings';
 import { validateAddress, validateUrl, type Settings } from '../settings/store';
-import { blockscoutAddressUrl } from '../gateway/client';
+import { blockscoutAddressUrl } from '@limccn/longstone-surface';
 
 export function SettingsView() {
   const settings = useSettings();

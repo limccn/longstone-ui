@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSettings, updateSettings } from '../settings/useSettings';
 import { validateAddress } from '../settings/store';
-import { blockscoutAddressUrl } from '../gateway/client';
+import { blockscoutAddressUrl } from '@limccn/longstone-surface';
 import { CHAIN, appKitEnabled } from '../wallet/config';
 
 const VERSIONS = [

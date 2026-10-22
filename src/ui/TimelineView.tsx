@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
-import { statesForOwner, filterByTags, type MemoryState } from '../state/derive';
+import { filterByTags, statesForOwner, type MemoryState } from '@limccn/longstone-surface';
 import { useChainIndex } from '../chain/useChainIndex';
 
 function shortHash(hash: string): string {

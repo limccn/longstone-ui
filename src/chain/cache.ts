@@ -1,6 +1,5 @@
 import { createStore, del, get, set } from 'idb-keyval';
-import type { MemoryEventRecord } from '../state/derive';
-import type { SignerRecord } from './registry';
+import type { MemoryEventRecord, SignerRecord } from '@limccn/longstone-surface';
 
 export interface CachedScan {
   registryAddress: `0x${string}`;

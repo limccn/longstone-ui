@@ -1,7 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useChainIndex } from '../chain/useChainIndex';
-import { predecessorOf, successorOf } from '../state/derive';
-import { blockscoutTxUrl } from '../gateway/client';
+import { blockscoutTxUrl, predecessorOf, successorOf } from '@limccn/longstone-surface';
 import { cidV1RawFromDigest } from '@limccn/menhir-core';
 
 export function DetailView() {

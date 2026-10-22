@@ -1,4 +1,4 @@
-import { UiError } from '../errors';
+import { UiError } from '../errors.js';
 
 /** Shared hardened fetch init. `signal` must be null (not undefined) to satisfy RequestInit. */
 function init(signal?: AbortSignal): RequestInit {
