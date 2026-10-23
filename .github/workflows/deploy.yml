@@ -15,8 +15,9 @@ concurrency:
 #   workspace/
 #   ├── pnpm-workspace.yaml
 #   ├── menhir/          (sibling repo; @limccn/menhir-core lives in menhir/ts)
+#   ├── longstone-surface/ (sibling repo; @limccn/longstone-surface)
 #   └── app/             (this repo)
-# The menhir checkout needs a token with read access to that repo.
+# The sibling checkouts use the workflow token; they are public repositories.
 
 jobs:
   verify:
@@ -32,13 +33,19 @@ jobs:
           repository: limccn/menhir
           token: ${{ secrets.MENHIR_REPO_TOKEN || github.token }}
           path: workspace/menhir
+      - name: Checkout longstone-surface (@limccn/longstone-surface)
+        uses: actions/checkout@v4
+        with:
+          repository: limccn/longstone-surface
+          token: ${{ github.token }}
+          path: workspace/longstone-surface
       - name: Assemble workspace
         working-directory: workspace
         run: |
           # `menhir/contracts` is deliberately absent: CI verifies the app and
           # the core library it imports, not the Solidity project (which needs
           # its own artifacts build and has no deploy step here).
-          printf 'packages:\n  - "app"\n  - "app/packages/longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
+          printf 'packages:\n  - "app"\n  - "longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
           # No repo is checked out at the workspace root, so the assembled
           # workspace needs its own manifest: pnpm/action-setup reads
           # `packageManager` from here to pick the pnpm version.
@@ -61,7 +68,7 @@ jobs:
         working-directory: workspace
       # `longstone-ui` imports the built surface, so the package's own tests
       # must gate the extraction too (the app suite is a consumer, not the API).
-      - run: pnpm --dir app/packages/longstone-surface test
+      - run: pnpm --dir longstone-surface test
         working-directory: workspace
       # The digest rules are the cross-component contract: Solidity, the
       # browser, and scripts all rely on @limccn/menhir-core agreeing byte-for-byte.
@@ -114,10 +121,16 @@ jobs:
           repository: limccn/menhir
           token: ${{ secrets.MENHIR_REPO_TOKEN || github.token }}
           path: workspace/menhir
+      - name: Checkout longstone-surface (@limccn/longstone-surface)
+        uses: actions/checkout@v4
+        with:
+          repository: limccn/longstone-surface
+          token: ${{ github.token }}
+          path: workspace/longstone-surface
       - name: Assemble workspace
         working-directory: workspace
         run: |
-          printf 'packages:\n  - "app"\n  - "app/packages/longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
+          printf 'packages:\n  - "app"\n  - "longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       # The action runs at the runner's workspace root (where no repo is
       # checked out), so point it at the assembled workspace's manifest.
