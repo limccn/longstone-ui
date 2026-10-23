@@ -31,7 +31,7 @@ Built for Base Sepolia (chain id 84532); works against any EVM chain where a
 
 ```bash
 corepack pnpm install
-corepack pnpm --dir longstone-ui/packages/longstone-surface build
+corepack pnpm --dir longstone-surface build
 corepack pnpm --dir longstone-ui dev
 ```
 
@@ -53,8 +53,8 @@ No private key is ever read by this app. All signing happens in the wallet.
 ## Scripts
 
 ```bash
-corepack pnpm --dir longstone-ui/packages/longstone-surface build
-corepack pnpm --dir longstone-ui/packages/longstone-surface test
+corepack pnpm --dir longstone-surface build
+corepack pnpm --dir longstone-surface test
 corepack pnpm --dir longstone-ui typecheck
 corepack pnpm --dir longstone-ui test          # vitest (unit + deploy parity)
 corepack pnpm --dir longstone-ui build
