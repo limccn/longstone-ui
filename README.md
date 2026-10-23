@@ -76,9 +76,11 @@ It asserts that the deployed bundle carries the real registry / IPFS / hisaishi
 URLs (a deploy that forgets a build variable fails here), that the timeline
 scans Base Sepolia, that Staging reads the Worker cross-origin, and that Verify
 fetches pinned bytes through the gateway digest route with both digests
-matching. The injected wallet is read-only — no key exists in the browser or
-the repo. Override `LIVE_OWNER`, `LIVE_SCAN_START`, or the endpoint variables
-when pointing it at another deployment.
+matching. The injected wallet is read-only — no key exists in this app's pages
+or the repo. (The separate `longstone-ext` companion may hold an encrypted,
+non-signing wallet vault; it never signs.) Override `LIVE_OWNER`,
+`LIVE_SCAN_START`, or the endpoint variables when pointing it at another
+deployment.
 
 `scripts/e2e.mjs` starts a local Hardhat node with `--chain-id 84532`,
 deploys and seeds a registry using the node's unlocked accounts, builds the

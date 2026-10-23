@@ -19,9 +19,18 @@ security constraints as required by the task design (§9.4).
 | Clickjacking | `frame-ancestors 'none'` + `X-Frame-Options: DENY` |
 | Supply-chain | Pinned versions, committed lockfile, `pnpm audit` in CI |
 
-**Out of scope for M1** (documented so design does not imply otherwise): key
-custody inside the browser, multi-user accounts, server-side auth, fiat
-on-ramp, transaction simulation beyond the wallet's own preview.
+**Out of scope for this web app** (documented so design does not imply
+otherwise): key custody inside these pages, multi-user accounts, server-side
+auth, fiat on-ramp, transaction simulation beyond the wallet's own preview.
+
+**Scope change 2026-10-23 — companion extension.** The Chrome/Edge side-panel
+extension (`longstone-ext` v0.2) is a separate surface that *does* hold
+encrypted key material locally. This web app still holds none, and neither
+surface signs: the extension stores an Argon2id + AES-256-GCM vault in
+`chrome.storage.local`, decrypts only in memory after an explicit unlock, and
+locks on hide/idle. The extension's own threat model, crypto parameters and
+residual risks are recorded in `longstone-ext/README.md` and
+`longstone-ext/store/PRIVACY.md`; the bullet below applies to this app.
 
 ---
 
@@ -100,12 +109,15 @@ is kept for older browsers. Both are intentional, not redundancy by accident.
 ## 4. Bundle and env rules
 
 - Only these variables may reach the browser: `VITE_REOWN_PROJECT_ID`,
-  `VITE_RPC_URL`, `VITE_REGISTRY_ADDRESS`, `VITE_IPFS_GATEWAY`.
+  `VITE_RPC_URL`, `VITE_REGISTRY_ADDRESS`, `VITE_IPFS_GATEWAY`,
+  `VITE_HISAISHI_URL`. All are public endpoints or public identifiers.
 - `scripts/audit-bundle.mjs` fails CI on: an unlisted `import.meta.env.VITE_*`,
   `process.env` in browser code, deployer/private-key/mnemonic material, and
   any top-level `404.html` in `dist/`.
-- Nothing in the UI ever reads or writes a private key. All signing happens
-  in the wallet; the app receives only signatures and addresses.
+- Nothing in **this web app** ever reads or writes a private key. All signing
+  happens in the wallet; the app receives only signatures and addresses. The
+  companion extension (`longstone-ext` v0.2) may hold an *encrypted* vault and
+  decrypt it in memory after an explicit unlock — it still never signs.
 - Settings live in `localStorage` (endpoints only, no credentials). Corrupt
   storage falls back to defaults instead of throwing.
 
@@ -131,7 +143,15 @@ confirmation is a normal dialog, not a pattern that disguises the action.
 
 ## 6. M2 key-unlock constraints (pre-written for the design agent)
 
-If M2 introduces local key management (encrypted keystore / passkey), the
+> **Status 2026-10-23:** the companion extension (`longstone-ext` v0.2)
+> implements these constraints for its local vault (Argon2id m=64 MiB t=3 p=1,
+> AES-256-GCM, domain-separated HKDF, reveal auto-hide, lock on hide/idle,
+> export behind password re-verification). This web app still holds no key.
+> The extension's residual risks (no server-side rate limit, JS cannot zero
+> memory, clipboard history) are recorded in the task archive and
+> `longstone-ext/store/PRIVACY.md`.
+
+If this web app introduces local key management (encrypted keystore / passkey), the
 design must satisfy:
 
 - **No key material in the DOM, logs, `localStorage`, or `IndexedDB` in

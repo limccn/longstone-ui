@@ -21,6 +21,7 @@ const VITE_ALLOWLIST = new Set([
   'VITE_RPC_URL',
   'VITE_REGISTRY_ADDRESS',
   'VITE_IPFS_GATEWAY',
+  'VITE_HISAISHI_URL',
 ]);
 
 // Match materialized secrets, not library API names. Curve libraries ship
