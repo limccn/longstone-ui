@@ -45,7 +45,11 @@ jobs:
           # `menhir/contracts` is deliberately absent: CI verifies the app and
           # the core library it imports, not the Solidity project (which needs
           # its own artifacts build and has no deploy step here).
-          printf 'packages:\n  - "app"\n  - "longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\n' > pnpm-workspace.yaml
+          #
+          # `audit.ignore` is the documented exception in README §Dependency
+          # audit exceptions: @reown/appkit 1.8.24 pins zod 3.22.4 and no
+          # patched 3.x exists. Remove it when appkit supports zod 4.
+          printf 'packages:\n  - "app"\n  - "longstone-surface"\n  - "menhir/ts"\nallowBuilds:\n  "@reown/appkit": true\n  "esbuild": true\naudit:\n  ignore:\n    - "GHSA-mrhx-c7xc-m3w5"\n' > pnpm-workspace.yaml
           # No repo is checked out at the workspace root, so the assembled
           # workspace needs its own manifest: pnpm/action-setup reads
           # `packageManager` from here to pick the pnpm version.

@@ -87,6 +87,15 @@ deploys and seeds a registry using the node's unlocked accounts, builds the
 app, and runs the Playwright journey suite. **No private key is read,
 written, or passed on any command line.**
 
+## Dependency audit exceptions
+
+`pnpm audit` must stay clean. One advisory is currently excepted because its
+major line has no patched release:
+
+| Advisory | Package | Why | Revisit |
+|---|---|---|---|
+| `GHSA-mrhx-c7xc-m3w5` | `zod < 4.6.6` | `@reown/appkit` 1.8.24 pins `zod 3.22.4` via `@reown/appkit-wallet`, and `@coinbase/cdp-sdk` brings `3.25.76`; only zod 4.6.6+ is patched and appkit does not support zod 4 yet. The advisory is a memory-exhaustion DoS. | 2026-11-24, or as soon as `@reown/appkit` supports zod 4 — remove the `audit.ignore` entry from the assembled `pnpm-workspace.yaml` in `.github/workflows/deploy.yml`. |
+
 ## Deploy
 
 Both targets ship identical security headers (enforced by
