@@ -10,6 +10,9 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 # `package.json` depends on `@limccn/menhir-core` via `workspace:*`, and this repo is
 # one package of the MemoryOverEth workspace. CI assembles that workspace:
 #   workspace/
@@ -56,14 +59,16 @@ jobs:
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       # The action runs at the runner's workspace root (where no repo is
       # checked out), so point it at the assembled workspace's manifest.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           package_json_file: workspace/package.json
-      # No lockfile is checked in by either repo, so setup-node's pnpm cache
-      # has nothing to key on (it would fail looking for workspace/pnpm-lock.yaml).
+      # No lockfile exists at the assembled workspace root, so setup-node's pnpm
+      # cache has nothing to key on (it would look for workspace/pnpm-lock.yaml).
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      # L-6 exception: assembled workspace cannot use a frozen lockfile.
+      # See https://github.com/limccn/longstone/blob/main/docs/supply-chain.md
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @limccn/menhir-core build
@@ -138,12 +143,14 @@ jobs:
           printf '{"name":"ci-workspace","private":true,"packageManager":"pnpm@12.11.2"}\n' > package.json
       # The action runs at the runner's workspace root (where no repo is
       # checked out), so point it at the assembled workspace's manifest.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           package_json_file: workspace/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      # L-6 exception: assembled workspace cannot use a frozen lockfile.
+      # See https://github.com/limccn/longstone/blob/main/docs/supply-chain.md
       - run: pnpm install --no-frozen-lockfile
         working-directory: workspace
       - run: pnpm --filter @limccn/menhir-core build
@@ -166,7 +173,7 @@ jobs:
       # `cond && '' || '--prod'` idiom is wrong (empty string is falsy).
       - name: Deploy preview to Vercel
         if: matrix.platform == 'vercel' && github.event_name == 'pull_request' && env.VERCEL_TOKEN != ''
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -175,7 +182,7 @@ jobs:
 
       - name: Deploy production to Vercel
         if: matrix.platform == 'vercel' && github.event_name != 'pull_request' && env.VERCEL_TOKEN != ''
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@16e87c0a08142b0d0d33b76aeaf20823c381b9b9 # v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}

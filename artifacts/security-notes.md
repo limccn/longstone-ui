@@ -17,7 +17,7 @@ security constraints as required by the task design (§9.4).
 | Wallet-drain via confusing consent | Plain-language confirmations for `setSigner` / `retract`; no blind signing |
 | XSS via hosted content | Never render memory bytes as HTML; text only |
 | Clickjacking | `frame-ancestors 'none'` + `X-Frame-Options: DENY` |
-| Supply-chain | Pinned versions, committed lockfile, `pnpm audit` in CI |
+| Supply-chain | Pinned versions, CI tests, `pnpm audit` in CI; assembled-workspace L-6 exception documented in `longstone/docs/supply-chain.md` |
 
 **Out of scope for this web app** (documented so design does not imply
 otherwise): key custody inside these pages, multi-user accounts, server-side
@@ -179,5 +179,5 @@ flow that the security model forbids.
   finding a second preimage — accepted as computationally infeasible for
   sha2-256/keccak-256.
 - `https:` in `connect-src` means a compromised dependency could beacon
-  outward. Mitigated by the pinned dependency set, lockfile, and bundle
-  audit; not eliminated.
+  outward. Mitigated by the pinned dependency set and bundle audit; the
+  assembled workspace has no committed lockfile (L-6 exception); not eliminated.
