@@ -1,9 +1,17 @@
 import { useMemo, useState } from 'react';
-import { useAccount, usePublicClient, useReadContract, useWriteContract } from 'wagmi';
+import {
+  useAccount,
+  usePublicClient,
+  useReadContract,
+  useSwitchChain,
+  useWriteContract,
+} from 'wagmi';
 import { memoryRegistryAbi } from '@limccn/menhir-core';
 import { useSettings } from '../settings/useSettings';
 import { signersForOwner, toUiError } from '@limccn/longstone-surface';
 import { useChainIndex } from '../chain/useChainIndex';
+import { CHAIN_ID } from '../wallet/config';
+import { isWriteChain } from '../wallet/chainGuard';
 
 const ROLE_COMMIT = 1n;
 const ROLE_RETRACT = 2n;
@@ -21,9 +29,10 @@ function short(address: string): string {
 }
 
 export function AclView() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const settings = useSettings();
   const publicClient = usePublicClient();
+  const { switchChain } = useSwitchChain();
   const { data: index, refetch } = useChainIndex();
   const [signerInput, setSignerInput] = useState('');
   const [roleCommit, setRoleCommit] = useState(true);
@@ -42,6 +51,7 @@ export function AclView() {
 
   const validSigner = ADDRESS_RE.test(signerInput);
   const registryReady = settings.registryAddress !== '';
+  const wrongChain = isConnected && !isWriteChain(chainId);
 
   // Fresh on-chain read for the address being edited (may not be in scan yet).
   const { data: currentRoles } = useReadContract({
@@ -55,12 +65,21 @@ export function AclView() {
   });
 
   async function setRoles(roles: bigint): Promise<void> {
-    if (address === undefined || !validSigner || publicClient == null) return;
+    if (
+      address === undefined ||
+      !isWriteChain(chainId) ||
+      !registryReady ||
+      !validSigner ||
+      publicClient == null
+    ) {
+      return;
+    }
     setError(null);
     setNotice(null);
     setBusy(true);
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: settings.registryAddress as `0x${string}`,
         abi: memoryRegistryAbi,
         functionName: 'setSigner',
@@ -110,6 +129,20 @@ export function AclView() {
         Revoking sets the signer&apos;s roles to <code>none</code>.
       </p>
 
+      {wrongChain && (
+        <p className="empty" data-testid="acl-wrong-chain">
+          Wrong network. Switch to Base Sepolia to manage signers.{' '}
+          <button
+            type="button"
+            className="warn"
+            data-testid="acl-switch-network"
+            onClick={() => switchChain({ chainId: CHAIN_ID })}
+          >
+            Switch to Base Sepolia
+          </button>
+        </p>
+      )}
+
       <div className="row">
         <input
           data-testid="acl-signer"
@@ -139,7 +172,7 @@ export function AclView() {
         <button
           type="button"
           data-testid="acl-grant"
-          disabled={busy || !validSigner || roles === 0n}
+          disabled={busy || wrongChain || !validSigner || roles === 0n}
           onClick={() => void setRoles(roles)}
         >
           {busy ? 'Signing…' : 'Grant'}
@@ -147,7 +180,7 @@ export function AclView() {
         <button
           type="button"
           data-testid="acl-revoke"
-          disabled={busy || !validSigner}
+          disabled={busy || wrongChain || !validSigner}
           onClick={() => void setRoles(0n)}
         >
           Revoke

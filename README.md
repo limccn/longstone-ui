@@ -58,7 +58,7 @@ corepack pnpm --dir longstone-surface test
 corepack pnpm --dir longstone-ui typecheck
 corepack pnpm --dir longstone-ui test          # vitest (unit + deploy parity)
 corepack pnpm --dir longstone-ui build
-corepack pnpm --dir longstone-ui audit         # bundle/env gate
+corepack pnpm --dir longstone-ui run audit     # bundle/env gate
 node longstone-ui/scripts/e2e.mjs              # local chain + fixture + Playwright
 ```
 

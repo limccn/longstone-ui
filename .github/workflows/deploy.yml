@@ -101,7 +101,9 @@ jobs:
           VITE_REGISTRY_ADDRESS: ${{ vars.VITE_REGISTRY_ADDRESS }}
           VITE_HISAISHI_URL: ${{ vars.VITE_HISAISHI_URL }}
           VITE_IPFS_GATEWAY: ${{ vars.VITE_IPFS_GATEWAY }}
-      - run: pnpm --dir app audit
+      # `pnpm audit` is a built-in command and would run the dependency audit,
+      # not this package's bundle gate. `run` is required to execute the script.
+      - run: pnpm --dir app run audit
         working-directory: workspace
       - run: pnpm audit --prod
         working-directory: workspace

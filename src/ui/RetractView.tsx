@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
+import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi';
 import { memoryRegistryAbi } from '@limccn/menhir-core';
 import { useSettings } from '../settings/useSettings';
 import { useChainIndex } from '../chain/useChainIndex';
 import { blockscoutTxUrl, statesForOwner, toUiError } from '@limccn/longstone-surface';
+import { CHAIN_ID } from '../wallet/config';
+import { isWriteChain } from '../wallet/chainGuard';
 
 const ZERO32 = `0x${'0'.repeat(64)}` as const;
 const HASH_RE = /^0x[0-9a-fA-F]{64}$/;
@@ -13,9 +15,10 @@ function short(hash: string): string {
 }
 
 export function RetractView() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const settings = useSettings();
   const publicClient = usePublicClient();
+  const { switchChain } = useSwitchChain();
   const { data: index, refetch } = useChainIndex();
   const { writeContractAsync } = useWriteContract();
   const [selected, setSelected] = useState('');
@@ -30,14 +33,25 @@ export function RetractView() {
   }, [index, address]);
 
   const replacedByValid = replacedBy.trim() === '' || HASH_RE.test(replacedBy.trim());
+  const registryReady = settings.registryAddress !== '';
+  const wrongChain = isConnected && !isWriteChain(chainId);
 
   async function retract(): Promise<void> {
-    if (publicClient == null || !HASH_RE.test(selected)) return;
+    if (
+      address === undefined ||
+      !isWriteChain(chainId) ||
+      !registryReady ||
+      publicClient == null ||
+      !HASH_RE.test(selected)
+    ) {
+      return;
+    }
     setError(null);
     setNotice(null);
     setBusy(true);
     try {
       const hash = await writeContractAsync({
+        chainId: CHAIN_ID,
         address: settings.registryAddress as `0x${string}`,
         abi: memoryRegistryAbi,
         functionName: 'retract',
@@ -71,6 +85,15 @@ export function RetractView() {
     );
   }
 
+  if (!registryReady) {
+    return (
+      <section data-testid="retract">
+        <h2>Retract</h2>
+        <p className="empty">Set the registry contract address in Settings first.</p>
+      </section>
+    );
+  }
+
   return (
     <section data-testid="retract">
       <h2>Retract a commitment</h2>
@@ -80,6 +103,19 @@ export function RetractView() {
         <code> replacedBy</code> link points to a successor commitment (compaction
         residuals start new chains).
       </p>
+      {wrongChain && (
+        <p className="empty" data-testid="retract-wrong-chain">
+          Wrong network. Switch to Base Sepolia to retract commitments.{' '}
+          <button
+            type="button"
+            className="warn"
+            data-testid="retract-switch-network"
+            onClick={() => switchChain({ chainId: CHAIN_ID })}
+          >
+            Switch to Base Sepolia
+          </button>
+        </p>
+      )}
       <div className="row">
         <select
           data-testid="retract-select"
@@ -105,7 +141,7 @@ export function RetractView() {
         <button
           type="button"
           data-testid="retract-run"
-          disabled={busy || !HASH_RE.test(selected) || !replacedByValid}
+          disabled={busy || wrongChain || !HASH_RE.test(selected) || !replacedByValid}
           onClick={() => void retract()}
         >
           {busy ? 'Signing…' : 'Retract'}

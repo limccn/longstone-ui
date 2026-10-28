@@ -5,17 +5,18 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // L-9: production maps expose source and are rejected by the bundle audit.
+    sourcemap: false,
   },
   server: {
     port: 5173,
     strictPort: true,
   },
-  // Vitest owns `test/*.test.ts`; Playwright owns `test/e2e/*.spec.ts`.
-  // Without the exclude, vitest imports the Playwright spec and the two
-  // runners collide on their shared `test.describe` API.
+  // Vitest owns the unit/component files below; Playwright owns
+  // `test/e2e/*.spec.ts`. Without the exclude, vitest imports the Playwright
+  // spec and the two runners collide on their shared `test.describe` API.
   test: {
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.test.ts', 'test/**/*.test.tsx', 'test/**/*.test.mjs'],
     exclude: ['test/e2e/**'],
   },
 });
