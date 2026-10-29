@@ -12,6 +12,11 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    // The dev box reaches public hosts only through an HTTP proxy. Keep it
+    // opt-in via env so local and CI runs are unchanged.
+    proxy: process.env['PLAYWRIGHT_PROXY']
+      ? { server: process.env['PLAYWRIGHT_PROXY'] }
+      : undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
