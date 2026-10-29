@@ -153,7 +153,7 @@ export async function serveGateway(page: Page): Promise<void> {
 }
 
 export async function connectWallet(page: Page): Promise<void> {
-  await page.goto('/');
+  await page.goto('/workspaces');
   const connect = page.getByTestId('connect');
   await expect(connect).toBeVisible();
   await connect.click();

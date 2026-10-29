@@ -7,10 +7,17 @@ delegated agent signers with wallet-signed transactions.
 Built for Base Sepolia (chain id 84532); works against any EVM chain where a
 `MemoryRegistry` is deployed.
 
+Hosted at `https://longstone.app`; the same build is also served at
+`https://longstone-ui.pages.dev` (fallback if the custom domain is unbound).
+
 ## What it does
 
-- **Timeline** — your anchored memories with `deep` / `active` badges and
-  retracted tombstones, plus tag filtering.
+- **Landing** — `/` is a static one-screen facade (positioning, CTAs, component
+  cards, document links) with no wallet dependency.
+- **Login** — `/login` connects a wallet (AppKit modal when configured,
+  injected otherwise) and links onward to the workspaces.
+- **Workspaces (timeline)** — `/workspaces` shows your anchored memories with
+  `deep` / `active` badges and retracted tombstones, plus tag filtering.
 - **Verify** — paste a commitment hash: the app derives the CID from the
   on-chain `cidDigest`, fetches the bytes, and checks both
   `keccak256(bytes) == contentHash` and `sha256(bytes) == cidDigest`.
@@ -19,6 +26,40 @@ Built for Base Sepolia (chain id 84532); works against any EVM chain where a
 - **Retract** — tombstone a commitment, optionally linking a successor.
 - **Settings** — RPC, registry, IPFS gateway, optional memory gateway.
 - **Staging** — read-only list from a remote hisaishi gateway (optional).
+- **Privacy / Terms** — `/privacy` and `/terms` are static document routes
+  outside the app shell.
+
+## Routes
+
+| Route | View | Shell |
+|---|---|---|
+| `/` | Landing facade (static) | outside |
+| `/privacy` | Privacy policy | outside |
+| `/terms` | Terms of use | outside |
+| `/login` | Wallet connection entry | inside |
+| `/workspaces` | Timeline (moved here from `/`) | inside |
+| `/verify` | Public verify | inside |
+| `/commitment/:hash` | Commitment detail | inside |
+| `/acl` | Agent signer roles | inside |
+| `/retract` | Retract (tombstone) | inside |
+| `/settings` | Settings | inside |
+| `/staging` | Optional hisaishi staging view | inside |
+| `/about` | Versions and registry | inside |
+| `*` | 404 inside the app shell | inside |
+
+Every route is a client-side SPA route: `public/_redirects` (Cloudflare Pages)
+and the Vercel rewrite both fall back to `index.html`, so direct navigation and
+refresh work without extra static files.
+
+## Deployed
+
+| Surface | URL |
+|---|---|
+| Web app (root domain) | `https://longstone.app` |
+| Web app (Pages fallback) | `https://longstone-ui.pages.dev` |
+| Memory gateway (hisaishi) | `https://api.longstone.app` (health at `/v1/health`; workers.dev stays as fallback) |
+| menhir portal | `https://menhir.longstone.app` |
+| hisaishi portal | `https://hisaishi.longstone.app` |
 
 ## Honest-by-design
 
@@ -45,7 +86,7 @@ Environment (all optional; also editable in Settings):
 | `VITE_RPC_URL` | default RPC (default `https://sepolia.base.org`) |
 | `VITE_REGISTRY_ADDRESS` | `MemoryRegistry` address |
 | `VITE_IPFS_GATEWAY` | IPFS gateway base URL |
-| `VITE_HISAISHI_URL` | remote gateway base URL; enables the Staging view and digest-based verify |
+| `VITE_HISAISHI_URL` | remote gateway base URL (production: `https://api.longstone.app`); enables the Staging view and digest-based verify |
 | `VITE_REOWN_PROJECT_ID` | enables the AppKit modal; unset → injected-only |
 
 No private key is ever read by this app. All signing happens in the wallet.
@@ -68,7 +109,8 @@ node longstone-ui/scripts/e2e.mjs              # local chain + fixture + Playwri
 `LIVE_E2E=1`:
 
 ```bash
-LIVE_E2E=1 LIVE_BASE_URL=https://longstone-ui.pages.dev \
+LIVE_E2E=1 LIVE_BASE_URL=https://longstone.app \
+  LIVE_HISAISHI_URL=https://api.longstone.app \
   corepack pnpm --dir longstone-ui exec playwright test test/e2e/live.spec.ts
 ```
 

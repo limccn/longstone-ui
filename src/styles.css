@@ -357,6 +357,156 @@ dd {
   margin: 6px 0;
 }
 
+/* Landing facade (root domain) — static, no app frame. */
+.landing {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.landing-top {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.landing-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 40px 20px 56px;
+}
+
+.landing-hero h1 {
+  max-width: 720px;
+  margin: 0;
+  font-size: clamp(1.9rem, 4.5vw, 3rem);
+}
+
+.landing-hero p {
+  max-width: 640px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+}
+
+.cta {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--bg);
+  text-decoration: none;
+  padding: 10px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+
+.cta.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+.cta:hover {
+  filter: brightness(1.1);
+}
+
+.landing-components {
+  margin-top: 48px;
+}
+
+.landing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.card:hover {
+  border-color: var(--accent);
+}
+
+.card h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.landing-footer {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 18px 20px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.landing-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.landing-footer a:hover {
+  color: var(--accent);
+}
+
+/* Login entry + static document pages. */
+.login-panel {
+  max-width: 620px;
+  margin-top: 16px;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.doc {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 64px;
+}
+
+.doc h1 {
+  margin-top: 0;
+}
+
+.doc h2 {
+  margin-top: 28px;
+}
+
+.doc p,
+.doc li {
+  line-height: 1.6;
+}
+
+.doc ul {
+  padding-left: 20px;
+}
+
 @media (max-width: 640px) {
   .app-header {
     gap: 10px;
@@ -367,5 +517,8 @@ dd {
   dl,
   .verdict dl {
     grid-template-columns: 1fr;
+  }
+  .landing-main {
+    padding-top: 24px;
   }
 }

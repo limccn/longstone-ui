@@ -205,7 +205,7 @@ test.describe('longstone-ui e2e — Base Sepolia chain semantics (local node)', 
     });
 
     // Timeline now shows the memory as retracted.
-    await page.getByRole('link', { name: 'Timeline' }).click();
+    await page.getByRole('link', { name: 'Workspaces' }).click();
     const row = page.locator('tr', {
       hasText: fixture.active.commitmentHash.slice(0, 10),
     });

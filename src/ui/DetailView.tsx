@@ -16,7 +16,7 @@ export function DetailView() {
     return (
       <section data-testid="detail">
         <p className="empty">Unknown commitment on this registry.</p>
-        <Link to="/">Back to timeline</Link>
+        <Link to="/workspaces">Back to workspaces</Link>
       </section>
     );
   }
@@ -78,7 +78,7 @@ export function DetailView() {
           )}
         </dd>
       </dl>
-      <Link to="/">Back to timeline</Link>
+      <Link to="/workspaces">Back to workspaces</Link>
     </section>
   );
 }

@@ -25,7 +25,7 @@ const OWNER = (process.env['LIVE_OWNER'] ??
 const REGISTRY = (process.env['LIVE_REGISTRY'] ??
   '0xC85ed11d3065739F1829A114e420584bEC3FDFEF') as `0x${string}`;
 const HISAISHI_URL =
-  process.env['LIVE_HISAISHI_URL'] ?? 'https://hisaishi.limingcheng269.workers.dev';
+  process.env['LIVE_HISAISHI_URL'] ?? 'https://api.longstone.app';
 const IPFS_GATEWAY =
   process.env['LIVE_IPFS_GATEWAY'] ??
   'https://turquoise-gigantic-bee-350.mypinata.cloud/ipfs';
@@ -82,7 +82,7 @@ test.describe('live — deployed UI → hisaishi → Base Sepolia', () => {
     const rows = await liveRows();
     expect(rows.length).toBeGreaterThan(0);
 
-    await page.goto(`${BASE_URL}/`);
+    await page.goto(`${BASE_URL}/workspaces`);
     await page.getByTestId('connect').click();
     await expect(page.getByTestId('wallet-address')).toBeVisible({ timeout: 30_000 });
 
@@ -103,7 +103,7 @@ test.describe('live — deployed UI → hisaishi → Base Sepolia', () => {
   test('staging reads the deployed gateway cross-origin', async ({ page }) => {
     const rows = await liveRows();
 
-    await page.goto(`${BASE_URL}/`);
+    await page.goto(`${BASE_URL}/workspaces`);
     await page.getByTestId('connect').click();
     await expect(page.getByTestId('wallet-address')).toBeVisible({ timeout: 30_000 });
     await page.getByRole('link', { name: 'Staging' }).click();
@@ -119,7 +119,7 @@ test.describe('live — deployed UI → hisaishi → Base Sepolia', () => {
     const anchored = rows.find((row) => row.status === 'anchored');
     expect(anchored, 'a live anchored row is required').toBeDefined();
 
-    await page.goto(`${BASE_URL}/`);
+    await page.goto(`${BASE_URL}/workspaces`);
     await page.getByTestId('connect').click();
     await expect(page.getByTestId('wallet-address')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('timeline-row').first()).toBeVisible({
