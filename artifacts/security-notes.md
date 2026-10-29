@@ -17,7 +17,7 @@ security constraints as required by the task design (§9.4).
 | Wallet-drain via confusing consent | Plain-language confirmations for `setSigner` / `retract`; no blind signing |
 | XSS via hosted content | Never render memory bytes as HTML; text only |
 | Clickjacking | `frame-ancestors 'none'` + `X-Frame-Options: DENY` |
-| Supply-chain | Pinned versions, CI tests, `pnpm audit` in CI; this app's CI installs frozen from the reviewed `longstone/ci/lockfiles/longstone-ui-deploy.yaml` ledger. Other assembled workspaces remain on the L-6 exception documented in `longstone/docs/supply-chain.md` |
+| Supply-chain | Pinned versions, CI tests, `pnpm audit` in CI; this app's CI installs frozen from the reviewed `longstone/ci/lockfiles/longstone-ui-deploy.yaml` ledger, and every other assembled workflow installs frozen from its reviewed ledger in the same directory (`longstone/docs/supply-chain.md`) |
 
 **Out of scope for this web app** (documented so design does not imply
 otherwise): key custody inside these pages, multi-user accounts, server-side
@@ -180,5 +180,5 @@ flow that the security model forbids.
   sha2-256/keccak-256.
 - `https:` in `connect-src` means a compromised dependency could beacon
   outward. Mitigated by the pinned dependency set, bundle audit, and the
-  `longstone-ui` frozen install from `longstone/ci/lockfiles/`. Other assembled
-  workflows still have no committed lockfile (L-6 exception); not eliminated.
+  `longstone-ui` frozen install from `longstone/ci/lockfiles/`. Every assembled
+  workflow now installs from a reviewed ledger there; not eliminated.
