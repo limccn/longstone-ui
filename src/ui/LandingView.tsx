@@ -4,7 +4,6 @@ interface ComponentCard {
   name: string;
   description: string;
   href: string;
-  external: boolean;
 }
 
 const COMPONENTS: readonly ComponentCard[] = [
@@ -13,38 +12,26 @@ const COMPONENTS: readonly ComponentCard[] = [
     description:
       'This app — browse anchored memories, verify content bytes, and manage agent signers.',
     href: '/workspaces',
-    external: false,
   },
   {
     name: 'menhir',
     description:
       'The immutable on-chain registry that anchors MemoryOverEth commitments.',
-    href: 'https://menhir.longstone.app',
-    external: true,
+    href: '/menhir',
   },
   {
     name: 'hisaishi',
     description:
       'The keyless memory gateway: staging, pinning, and batch preparation.',
-    href: 'https://hisaishi.longstone.app',
-    external: true,
+    href: '/hisaishi',
   },
 ];
 
 function Card({ component }: { component: ComponentCard }) {
-  const body = (
-    <>
+  return (
+    <Link className="card" to={component.href}>
       <h3>{component.name}</h3>
       <p>{component.description}</p>
-    </>
-  );
-  return component.external ? (
-    <a className="card" href={component.href} target="_blank" rel="noreferrer">
-      {body}
-    </a>
-  ) : (
-    <Link className="card" to={component.href}>
-      {body}
     </Link>
   );
 }

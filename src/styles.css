@@ -507,6 +507,61 @@ dd {
   padding-left: 20px;
 }
 
+/* Component pages (`/menhir`, `/hisaishi`) — merged from the old standalone
+   portals, so they keep a lighter document layout without the app frame. */
+.portal-tagline {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.portal-cta {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.portal-cta:hover {
+  filter: brightness(1.1);
+}
+
+.portal-links {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.portal-links li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.portal-links .label {
+  flex: 0 0 8rem;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.portal-footer {
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 @media (max-width: 640px) {
   .app-header {
     gap: 10px;

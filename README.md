@@ -28,6 +28,9 @@ Hosted at `https://longstone.app`; the same build is also served at
 - **Staging** — read-only list from a remote hisaishi gateway (optional).
 - **Privacy / Terms** — `/privacy` and `/terms` are static document routes
   outside the app shell.
+- **Component pages** — `/menhir` and `/hisaishi` are lightweight component
+  pages (the old standalone portals) rendered by the same SPA, with no extra
+  deployment or subdomain.
 
 ## Routes
 
@@ -36,6 +39,8 @@ Hosted at `https://longstone.app`; the same build is also served at
 | `/` | Landing facade (static) | outside |
 | `/privacy` | Privacy policy | outside |
 | `/terms` | Terms of use | outside |
+| `/menhir` | menhir component page | outside |
+| `/hisaishi` | hisaishi component page | outside |
 | `/login` | Wallet connection entry | inside |
 | `/workspaces` | Timeline (moved here from `/`) | inside |
 | `/verify` | Public verify | inside |
@@ -58,8 +63,10 @@ refresh work without extra static files.
 | Web app (root domain) | `https://longstone.app` |
 | Web app (Pages fallback) | `https://longstone-ui.pages.dev` |
 | Memory gateway (hisaishi) | `https://api.longstone.app` (health at `/v1/health`; workers.dev stays as fallback) |
-| menhir portal | `https://menhir.longstone.app` |
-| hisaishi portal | `https://hisaishi.longstone.app` |
+
+Component pages are routes of the web app: `https://longstone.app/menhir` and
+`https://longstone.app/hisaishi`. There are no portal subdomains or separate
+Pages projects.
 
 ## Honest-by-design
 

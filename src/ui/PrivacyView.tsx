@@ -87,10 +87,10 @@ export function PrivacyView() {
           only when you click a transaction or contract link;
         </li>
         <li>
-          the component links on the landing page (
-          <span className="mono">menhir.longstone.app</span>,{' '}
-          <span className="mono">hisaishi.longstone.app</span>, GitHub), only
-          when you click them.
+          the GitHub link in the landing footer, only when you click it. (The
+          component pages at <span className="mono">/menhir</span> and{' '}
+          <span className="mono">/hisaishi</span> are routes of this static
+          app, so opening them makes no network request.)
         </li>
       </ul>
       <p>

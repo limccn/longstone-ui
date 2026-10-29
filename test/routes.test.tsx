@@ -101,12 +101,14 @@ describe('routes outside the app shell', () => {
     expect(enter.getAttribute('href')).toBe('/workspaces');
     expect(connect.getAttribute('href')).toBe('/login');
 
+    // Component pages are same-origin routes now; there are no portal
+    // subdomains or separate Pages projects behind them.
     expect(
       screen.getByRole('link', { name: /menhir/ }).getAttribute('href'),
-    ).toBe('https://menhir.longstone.app');
+    ).toBe('/menhir');
     expect(
       screen.getByRole('link', { name: /hisaishi/ }).getAttribute('href'),
-    ).toBe('https://hisaishi.longstone.app');
+    ).toBe('/hisaishi');
     expect(screen.getByRole('link', { name: 'Privacy' }).getAttribute('href')).toBe(
       '/privacy',
     );
@@ -142,6 +144,38 @@ describe('routes outside the app shell', () => {
     expect(screen.getByTestId('terms')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Terms of use');
     expect(screen.getByText(/irreversible/)).toBeTruthy();
+    expect(screen.queryByTestId('wallet-bar')).toBeNull();
+  });
+
+  it('/menhir renders the menhir component page outside the shell', () => {
+    renderAt('/menhir');
+
+    expect(screen.getByTestId('menhir')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('menhir');
+    expect(
+      screen
+        .getByRole('link', { name: 'Verify a commitment (longstone.app/verify)' })
+        .getAttribute('href'),
+    ).toBe('/verify');
+    expect(
+      screen.getByRole('link', { name: 'github.com/limccn/menhir' }).getAttribute('href'),
+    ).toBe('https://github.com/limccn/menhir');
+    expect(screen.queryByTestId('wallet-bar')).toBeNull();
+  });
+
+  it('/hisaishi renders the hisaishi component page outside the shell', () => {
+    renderAt('/hisaishi');
+
+    expect(screen.getByTestId('hisaishi')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('hisaishi');
+    expect(
+      screen
+        .getByRole('link', { name: 'Gateway health (api.longstone.app/v1/health)' })
+        .getAttribute('href'),
+    ).toBe('https://api.longstone.app/v1/health');
+    expect(
+      screen.getByRole('link', { name: 'github.com/limccn/hisaishi' }).getAttribute('href'),
+    ).toBe('https://github.com/limccn/hisaishi');
     expect(screen.queryByTestId('wallet-bar')).toBeNull();
   });
 });
